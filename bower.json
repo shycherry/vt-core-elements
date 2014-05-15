@@ -1,0 +1,19 @@
+{
+  "name": "vt-core-elements",
+  "version": "0.0.1",
+  "homepage": "https://github.com/shycherry/vt-core-elements",
+  "authors": [
+    "shycherry <vinpowful@free.fr>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "latest",
+  }
+}

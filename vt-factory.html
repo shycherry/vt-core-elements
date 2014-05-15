@@ -1,0 +1,29 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<polymer-element name="vt-factory" id="factory">
+  <script>    
+    var globId = 0;
+
+    Polymer('vt-factory',{
+      ready : function(){
+        this.cancelUnbindAll();
+      },
+      detached : function(){
+        this.cancelUnbindAll();
+      },
+      createModel : function(vtName){
+        var modelNode = document.createElement(vtName+'-model');
+        modelNode.id = 'm'+globId;
+        globId++;
+        this.appendChild(modelNode);
+
+        return modelNode;
+      },
+
+      getModel : function(id){
+        return this.querySelector('#'+id);
+      }
+
+    });
+  </script>
+</polymer-element>

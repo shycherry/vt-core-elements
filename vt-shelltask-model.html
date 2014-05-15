@@ -1,0 +1,11 @@
+<link rel="import" href="./vt-base-element-model.html">
+
+<!-- events: change_status (enqueued, canceled, working, dropped) -->
+<polymer-element name="vt-shelltask-model" extends="vt-base-element-model" attributes="command" class="enqueued">
+  <script>
+    Polymer('vt-shelltask-model',{
+      command : "ls",
+      status: "unknown",
+    });
+  </script>
+</polymer-element>

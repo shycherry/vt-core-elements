@@ -1,0 +1,18 @@
+<link rel="import" href="./vt-base-element.html">
+
+<!-- events: change_status (enqueued, canceled, working, dropped) -->
+<polymer-element name="vt-shelltask" extends="vt-base-element" attributes="command" class="canceled">
+  <template>
+    <link rel="stylesheet" href="vt-shelltask.css"/>
+    shelltask#{{model.id}} - {{command}}
+  </template>
+  <script>
+    Polymer('vt-shelltask',{
+      command : "ls",
+      status: "unknown",
+      created: function(){
+        this.super();
+      }
+    });
+  </script>
+</polymer-element>

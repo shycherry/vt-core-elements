@@ -1,0 +1,11 @@
+:host-context(.canceled){
+  background-color: rgba(0,0,0,0.5);
+}
+
+:host-context(.enqueued){
+  background-color: rgba(0,255,0,0.1);
+}
+
+:host {
+  display: block;
+}
