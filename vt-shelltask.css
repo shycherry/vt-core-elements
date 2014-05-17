@@ -1,8 +1,8 @@
-:host-context(.canceled){
+:host-context([status="canceled"]){
   background-color: rgba(0,0,0,0.5);
 }
 
-:host-context(.enqueued){
+:host-context([status="enqueued"]){
   background-color: rgba(0,255,0,0.1);
 }
 
