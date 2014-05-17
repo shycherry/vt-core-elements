@@ -10,10 +10,9 @@
     Polymer('vt-shelltask',{
       command : "ls",
       status: "unknown",
-      // ready: function(){
-      //   this.super();
-      //   this.elt_id = 'ShellTask_'+this.elt_id;
-      // }
+      dataChanged : function(){
+        this.command = this.data.command;
+      }
     });
   </script>
 </polymer-element>
