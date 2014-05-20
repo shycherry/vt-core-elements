@@ -1,6 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 
-<polymer-element name="vt-model-element" attributes="elt_id">
+<polymer-element name="vt-model-element" attributes="elt_id data">
   <script>
     var globId = 0;
 
@@ -17,7 +17,7 @@
 
       ready : function(){
         console.log(this.localName+' ready');  
-        this.elt_id = ''+globId;
+        this.elt_id = this.localName+'_'+globId;
         globId++;
       },
 
@@ -33,7 +33,7 @@
         console.log(this.localName+' detached');
       },
 
-      attributeChanged :function(attrName, oldVal, newVal){
+      attributeChanged : function(attrName, oldVal, newVal){
         console.log(this.localName+' attr '+attrName+' changed from '+oldVal+' to '+newVal);
       }
 

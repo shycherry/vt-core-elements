@@ -1,0 +1,51 @@
+<link rel="import" href="./vt-model-element.html">
+
+<!-- events: statusChanged (enqueued, canceled, working, dropped) -->
+<polymer-element name="vt-shell" extends="vt-model-element">
+  <template>
+    <link rel="stylesheet" href="vt-shell.css"/>
+    <div id="shellContainer">
+      <div id="viewport"></div>
+      <div id="shelltasksContainer">
+        <template repeat = "{{t in tasks}}">
+          {{t}}
+        </template>
+      </div>
+      <div id="inputbar">
+        <input id="commandInput"/>
+        <button on-click="{{enqueueTask}}">Enqueue</button>
+      </div>
+    </div>
+  </template>
+  <script>
+    var ChildProcess = global.require('child_process');
+    var Async = global.require('async');
+
+    Polymer('vt-shell',{      
+      created : function(){
+        this.queue = new Async.queue(this.doTask.bind(this), 1);
+        this.tasks = [];
+      },
+      doTask : function(){
+
+      },
+      addTaskElt : function(iTaskElt){
+        var taskElt = document.createElement(iTaskElt.type);        
+        taskElt.data = iTaskElt;
+        this.tasks.push(taskElt);
+        //this.$.shelltasksContainer.appendChild(taskElt);        
+      },
+      enqueueTask : function(){
+        var userCmd = this.$.commandInput.value;
+        if(!userCmd)
+          return;
+        
+        var newTask = {
+          type: 'vt-shelltask',
+          command: userCmd
+        };
+        this.addTaskElt(newTask);
+      }
+    });
+  </script>
+</polymer-element>
