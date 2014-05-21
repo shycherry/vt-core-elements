@@ -7,9 +7,7 @@
     <div id="shellContainer">
       <div id="viewport"></div>
       <div id="shelltasksContainer">
-        <template repeat = "{{t in tasks}}">
-          {{t}}
-        </template>
+        <content></content>
       </div>
       <div id="inputbar">
         <input id="commandInput"/>
@@ -29,22 +27,27 @@
       doTask : function(){
 
       },
+      domReady : function(){
+        shelltasks = this.$.shelltasksContainer.querySelectorAll('vt-shelltask');
+        console.log(shelltasks);
+      },
       addTaskElt : function(iTaskElt){
-        var taskElt = document.createElement(iTaskElt.type);        
-        taskElt.data = iTaskElt;
-        this.tasks.push(taskElt);
-        //this.$.shelltasksContainer.appendChild(taskElt);        
+        // this.tasks.push(taskElt);
+        this.$.shelltasksContainer.appendChild(iTaskElt);
       },
       enqueueTask : function(){
         var userCmd = this.$.commandInput.value;
         if(!userCmd)
           return;
         
-        var newTask = {
-          type: 'vt-shelltask',
+        var newTaskData = {
           command: userCmd
         };
-        this.addTaskElt(newTask);
+        
+        var newTaskElt = document.createElement('vt-shelltask');        
+        newTaskElt.data = newTaskData;
+
+        this.addTaskElt(newTaskElt);
       }
     });
   </script>
