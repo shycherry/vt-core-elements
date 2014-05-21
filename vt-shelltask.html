@@ -1,10 +1,12 @@
 <link rel="import" href="./vt-model-element.html">
 
-<!-- events: statusChanged (enqueued, canceled, working, dropped) -->
+<!-- events: statusChanged (enqueued, canceled, working, finished) -->
 <polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status" status="canceled">
   <template>
-    <link rel="stylesheet" href="vt-shelltask.css"/>
-    #{{elt_id}} - {{command}}
+    <div on-click="{{cycleStatus}}">
+      <link rel="stylesheet" href="vt-shelltask.css"/>
+      #{{elt_id}} - {{command}}
+    </div>
   </template>
   <script>
     Polymer('vt-shelltask',{
@@ -12,6 +14,9 @@
       status: "unknown",
       dataChanged : function(){
         this.command = this.data.command;
+      },
+      cycleStatus : function(){
+        this.setAttribute('status', (this.status == 'canceled') ? 'enqueued' : 'canceled' );
       }
     });
   </script>

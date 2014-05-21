@@ -7,11 +7,11 @@
     <div id="shellContainer">
       <div id="viewport"></div>
       <div id="shelltasksContainer">
-        <content></content>
+        <content id="content" select="vt-shelltask"></content>
       </div>
       <div id="inputbar">
         <input id="commandInput"/>
-        <button on-click="{{enqueueTask}}">Enqueue</button>
+        <button on-click="{{enqueueCommand}}">Enqueue</button>
       </div>
     </div>
   </template>
@@ -21,33 +21,50 @@
 
     Polymer('vt-shell',{      
       created : function(){
-        this.queue = new Async.queue(this.doTask.bind(this), 1);
-        this.tasks = [];
-      },
-      doTask : function(){
+        this.queue = Async.queue(this.doShellTask.bind(this), 1);
+      },      
+      doShellTask : function(iShellTaskElt, iCallback){
+        console.log('doShellTask');
+        
+        if(iShellTaskElt.status == 'canceled'){
+          iShellTaskElt.setAttribute("status", "dropped");
+          iShellTaskElt.remove();
+          if(iCallback) iCallback();
+          return;
+        }
 
+        iShellTaskElt.setAttribute("status", "working");
+        setTimeout(function(){
+          iShellTaskElt.setAttribute("status", "finished");
+          iShellTaskElt.remove();
+          if(iCallback) iCallback();
+        }, 1000);
       },
       domReady : function(){
-        shelltasks = this.$.shelltasksContainer.querySelectorAll('vt-shelltask');
-        console.log(shelltasks);
+        usershelltasks = this.$.content.getDistributedNodes();        
+        usershelltasks.forEach(this.addShellTaskElt.bind(this));
       },
-      addTaskElt : function(iTaskElt){
-        // this.tasks.push(taskElt);
-        this.$.shelltasksContainer.appendChild(iTaskElt);
+      addShellTaskElt : function(iShellTaskElt){
+        console.log('addShellTaskElt');
+        if(!iShellTaskElt)
+          return;
+
+        iShellTaskElt.setAttribute("status", "enqueued");
+        this.$.shelltasksContainer.appendChild(iShellTaskElt);
+        this.queue.push(iShellTaskElt);
       },
-      enqueueTask : function(){
+      addTaskData : function(iTask){
+        var newTaskElt = document.createElement('vt-shelltask');        
+        newTaskElt.data = iTask;
+
+        this.addShellTaskElt(newTaskElt);
+      },
+      enqueueCommand : function(){
         var userCmd = this.$.commandInput.value;
         if(!userCmd)
           return;
         
-        var newTaskData = {
-          command: userCmd
-        };
-        
-        var newTaskElt = document.createElement('vt-shelltask');        
-        newTaskElt.data = newTaskData;
-
-        this.addTaskElt(newTaskElt);
+        this.addTaskData({ command: userCmd });
       }
     });
   </script>

@@ -1,3 +1,13 @@
+@-webkit-keyframes working
+{
+  from {-webkit-filter : opacity(0);}
+  to {-webkit-filter : opacity(1);}
+}
+
+:host-context([status="working"]){
+  -webkit-animation: working 1s infinite;
+}
+
 :host-context([status="canceled"]){
   background-color: rgba(0,0,0,0.5);
 }
