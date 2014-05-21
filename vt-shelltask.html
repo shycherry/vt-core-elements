@@ -1,7 +1,7 @@
 <link rel="import" href="./vt-model-element.html">
 
-<!-- events: statusChanged (enqueued, canceled, working, finished) -->
-<polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status" status="canceled">
+<!-- events: statusChanged (enqueued, canceled, working, dropped, finished) -->
+<polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status" status="enqueued">
   <template>
     <div on-click="{{cycleStatus}}">
       <link rel="stylesheet" href="vt-shelltask.css"/>

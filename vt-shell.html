@@ -18,15 +18,60 @@
   <script>
     var ChildProcess = global.require('child_process');
     var Async = global.require('async');
+    var _StartTransactionMarker = 'echo V15TStart_';
+    var _EndTransactionMarker = 'echo V15TEnd_';
+    var _TransactionMarker = '_Trans_';
 
     Polymer('vt-shell',{      
       created : function(){
         this.queue = Async.queue(this.doShellTask.bind(this), 1);
-      },      
+        this.child_process = ChildProcess.spawn('cmd');
+        this.fullOutput = '';
+        this.locTransactionId = 0;
+
+        var self = this;
+        var stdoutCallback = function(data){
+          self.fullOutput += data;
+          self.$.viewport.innerHTML += self.encodeHTML(data);
+          self.fire('stdout_data', data);
+          // self.emit('data', data);
+        };
+
+        var stderrCallback = function(data){
+          self.fullOutput += data;
+          self.$.viewport.innerHTML += self.encodeHTML(data);
+          self.fire('stderr_data', data);
+          // self.emit('data', data);
+        };
+        
+        this.child_process.stdout.on('data', stdoutCallback);
+        this.child_process.stderr.on('data', stderrCallback);
+        this.child_process.on('exit', function(){console.log('child_process exited')});
+      },
+      encodeHTML : function(iText){
+        if(! iText){
+          return '';
+        }
+
+        if( !(iText.replace) ){
+          iText = iText.toString();
+        }
+
+        if(iText.replace){
+          return iText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/(\n)/g,'<br/>');
+        }else{
+          return '';
+        }
+      },
+      write : function(iData){
+        this.child_process.stdin.write(iData);
+      },
       doShellTask : function(iShellTaskElt, iCallback){
         console.log('doShellTask');
+        var self = this;
+        var transactionId = _TransactionMarker+this.locTransactionId;
         
-        if(iShellTaskElt.status == 'canceled'){
+        if(iShellTaskElt.status === 'canceled'){
           iShellTaskElt.setAttribute("status", "dropped");
           iShellTaskElt.remove();
           if(iCallback) iCallback();
@@ -34,14 +79,49 @@
         }
 
         iShellTaskElt.setAttribute("status", "working");
-        setTimeout(function(){
-          iShellTaskElt.setAttribute("status", "finished");
-          iShellTaskElt.remove();
-          if(iCallback) iCallback();
-        }, 1000);
+        this.write(_StartTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
+        this.write( (iShellTaskElt.command?iShellTaskElt.command:'') + '\n');
+        this.write(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
+
+        var dataBuffer='';
+
+        var dataCallback = function(customEvent){
+          console.log('dataCallback');
+          var stringData = customEvent.detail.toString();
+          dataBuffer += stringData;
+          if(RegExp(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId).test(stringData)){
+            console.log('dataCallbackmatch');
+            iShellTaskElt.setAttribute('status','finished');
+            iShellTaskElt.remove();
+            self.removeEventListener('stdout_data', stdoutCallback);
+            self.removeEventListener('stderr_data', stderrCallback);
+            self.locTransactionId++;
+            
+            if(iCallback){
+              iCallback(null, dataBuffer);
+            }
+          }
+        };
+
+        var stdoutCallback = function(customEvent){          
+          dataCallback(customEvent);
+          if(iShellTaskElt.stdoutCallback){
+            iShellTaskElt.stdoutCallback(customEvent);
+          }
+        };
+
+        var stderrCallback = function(customEvent){
+          dataCallback(customEvent);
+          if(iShellTaskElt.stdoutCallback){
+            iShellTaskElt.stdoutCallback(customEvent);
+          }
+        };
+
+        this.addEventListener('stdout_data', stdoutCallback);
+        this.addEventListener('stderr_data', stderrCallback);
       },
       domReady : function(){
-        usershelltasks = this.$.content.getDistributedNodes();        
+        usershelltasks = this.$.content.getDistributedNodes();
         usershelltasks.forEach(this.addShellTaskElt.bind(this));
       },
       addShellTaskElt : function(iShellTaskElt){
