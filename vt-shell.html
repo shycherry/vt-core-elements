@@ -1,18 +1,22 @@
 <link rel="import" href="./vt-model-element.html">
 
 <!-- events: statusChanged (enqueued, canceled, working, dropped) -->
-<polymer-element name="vt-shell" extends="vt-model-element">
+<polymer-element name="vt-shell" extends="vt-model-element" attributes="commandline output">
   <template>
     <link rel="stylesheet" href="vt-shell.css"/>
     <div id="shellContainer">
-      <div id="viewport"></div>
+      <template if="{{output}}">
+        <div id="viewport"></div>
+      </template>
       <div id="shelltasksContainer">
         <content id="content" select="vt-shelltask"></content>
       </div>
-      <div id="inputbar">
-        <input id="commandInput"/>
-        <button on-click="{{enqueueCommand}}">Enqueue</button>
-      </div>
+      <template if="{{commandline}}">
+        <div id="inputbar">
+          <input id="commandInput"/>
+          <button on-click="{{clickEnqueueCallback}}">Enqueue</button>
+        </div>
+      </template>
     </div>
   </template>
   <script>
@@ -22,7 +26,9 @@
     var _EndTransactionMarker = 'echo V15TEnd_';
     var _TransactionMarker = '_Trans_';
 
-    Polymer('vt-shell',{      
+    Polymer('vt-shell',{
+      commandline: false,
+      output: false,
       created : function(){
         this.queue = Async.queue(this.doShellTask.bind(this), 1);
         this.child_process = ChildProcess.spawn('cmd');
@@ -32,16 +38,18 @@
         var self = this;
         var stdoutCallback = function(data){
           self.fullOutput += data;
-          self.$.viewport.innerHTML += self.encodeHTML(data);
+          if(self.output){
+            self.$.viewport.innerHTML += self.encodeHTML(data);
+          }
           self.fire('stdout_data', data);
-          // self.emit('data', data);
         };
 
         var stderrCallback = function(data){
           self.fullOutput += data;
-          self.$.viewport.innerHTML += self.encodeHTML(data);
+          if(self.output){
+            self.$.viewport.innerHTML += self.encodeHTML(data);
+          }
           self.fire('stderr_data', data);
-          // self.emit('data', data);
         };
         
         this.child_process.stdout.on('data', stdoutCallback);
@@ -139,7 +147,7 @@
 
         this.addShellTaskElt(newTaskElt);
       },
-      enqueueCommand : function(){
+      clickEnqueueCallback : function(){
         var userCmd = this.$.commandInput.value;
         if(!userCmd)
           return;
