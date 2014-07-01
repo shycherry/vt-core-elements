@@ -1,0 +1,8 @@
+:host {
+  display: block;
+}
+
+.innerTool {
+  overflow: auto;
+  position: relative !important;
+}
