@@ -3,6 +3,6 @@
 }
 
 .innerTool {
-  overflow: auto;
+  overflow: auto !important;
   position: relative !important;
 }

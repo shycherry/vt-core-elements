@@ -130,11 +130,14 @@
       },
       domReady : function(){
         usershelltasks = this.$.content.getDistributedNodes();
-        usershelltasks.forEach(this.addShellTaskElt.bind(this));
+        // usershelltasks.forEach(this.addShellTaskElt.bind(this));
+        for(var i in usershelltasks){
+          this.addShellTaskElt(usershelltasks[i])
+        }
       },
       addShellTaskElt : function(iShellTaskElt){
         console.log('addShellTaskElt');
-        if(!iShellTaskElt)
+        if(!iShellTaskElt || !iShellTaskElt.setAttribute)
           return;
 
         iShellTaskElt.setAttribute("status", "enqueued");
