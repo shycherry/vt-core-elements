@@ -1,7 +1,8 @@
 <link rel="import" href="./vt-model-element.html">
+<script type="text/javascript" src="../underscore/underscore.js"></script>
 
 <!-- events: statusChanged (enqueued, canceled, working, dropped) -->
-<polymer-element name="vt-shell" extends="vt-model-element" attributes="commandline output">
+<polymer-element name="vt-shell" extends="vt-model-element" attributes="commandline output params">
   <template>
     <link rel="stylesheet" href="vt-shell.css"/>
     <div id="shellContainer">
@@ -26,9 +27,139 @@
     var _EndTransactionMarker = 'echo V15TEnd_';
     var _TransactionMarker = '_Trans_';
 
+    function getDependenciesParams(iParam){
+      var paramRegex = /\[(\S+)\]/g;
+      var currentResult = null;
+      var dependencies = [];
+      while(currentResult = paramRegex.exec(iParam)){
+        dependencies = dependencies.concat(currentResult[1]);
+      }
+      return dependencies;
+    }
+
+    // function getConcatSet(iSet1, iObj)
+
+    function getDependenciesGraph(iParams){
+      var hashMap = {};
+      var graph = null;
+
+      function Node(iName){
+        this.name = iName;
+        this.isResolved = false;
+      }
+      Node.prototype.addDependency = function(iNode){
+        if(!this.dependencies)
+          this.dependencies = [];
+        this.dependencies = _.union(this.dependencies, iNode);
+      }
+      Node.prototype.isResolved = function(){
+        if(!this.isResolved){
+          this.isResolved = true;
+          
+          for(var depIdx in this.dependencies){
+            var currentDep = this.dependencies[depIdx];
+            if(!currentDep.isResolved()){
+              this.isResolved = false;
+              break;
+            }
+          }
+        }
+        return isResolved;
+      }
+
+      for(var paramName in iParams){
+        var currentParamObj = hashMap[paramName];
+        if(!currentParamObj){
+          currentParamObj = hashMap[paramName] = new Node(paramName);
+        }
+        var currentParamValue = iParams[paramName];
+        var dependencies = getDependenciesParams(currentParamValue);
+        console.log('param deps:',dependencies);
+        
+        if(!currentParamObj['depends']){
+          currentParamObj['depends'] = [];
+        }
+
+        for(var dependencyIdx in dependencies){
+          var currentDependencyName = dependencies[dependencyIdx];
+          var currentDependencyParam = iParams[currentDependencyName];
+          if(currentDependencyParam == undefined){
+            return null;
+          }
+          var currentDependencyObj = hashMap[currentDependencyName];
+          if(!currentDependencyObj){
+            currentDependencyObj = hashMap[currentDependencyName] = new Node(currentDependencyName);
+          }
+          currentParamObj['depends'].push(currentDependencyObj);
+        }
+        
+        console.log(JSON.stringify(hashMap,2,2));
+
+      }
+      return graph;
+    }
+
+    function checkParams(iParams){
+      for(var paramIdx in iParams){
+        var currentParamValue = iParams[paramIdx];
+        var dependencies = getDependenciesParams(currentParamValue);
+        console.log('param deps:',dependencies);
+        
+        for(var dependencyIdx in dependencies){
+          var currentDependencyParam = iParams[dependencies[dependencyIdx]];
+          if(currentDependencyParam == undefined){
+            return false;
+          }
+          var dependencyDependencies = getDependenciesParams(currentDependencyParam);
+          console.log('dep param deps:',dependencyDependencies);
+          for (var depIdx in dependencyDependencies){
+            console.log('test current param:',paramIdx,' with ',dependencyDependencies[depIdx]);
+
+            if (dependencyDependencies[depIdx] === paramIdx) {
+              return false;
+            }
+          } 
+        }
+
+      }
+      return true;
+    }
+
+    function computeParams(iParams){
+      var result = {};
+      if(!checkParams(iParams)){
+        return null;
+      }
+
+      for(var paramName in iParams){
+        var currentParamValue = iParams[paramName];
+        var dependencies = getDependenciesParams(currentParamValue);
+        for(var depIdx in dependencies){
+          var currentDepName = dependencies[depIdx];
+          var currentDepValue = iParams[currentDepName];
+          
+          var findRegex = '\['+currentDepName+'\]';
+          var re = new RegExp(findRegex, 'g');
+           
+          result[paramName] = currentParamValue.replace(re, currentDepValue);
+        }
+
+      }
+      return result;
+    }
+
+    function injectParams(iData, iParams){
+      var computedParams = computeParams(iParams);
+      if(!computedParams){
+        return iData;
+      }
+
+    }
+
     Polymer('vt-shell',{
       commandline: false,
       output: false,
+      params: {},
       created : function(){
         this.queue = Async.queue(this.doShellTask.bind(this), 1);
         this.child_process = ChildProcess.spawn('cmd');
@@ -71,8 +202,13 @@
           return '';
         }
       },
-      write : function(iData){
+      rawWrite : function(iData){
         this.child_process.stdin.write(iData);
+      },
+      write : function(iData){
+        var injectedData = injectParams(iData, this.params);
+
+        this.rawWrite(iData);
       },
       doShellTask : function(iShellTaskElt, iCallback){
         console.log('doShellTask');
