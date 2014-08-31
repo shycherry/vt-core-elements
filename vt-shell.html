@@ -28,7 +28,7 @@
     var _TransactionMarker = '_Trans_';
 
     function getDependenciesParams(iParam){
-      var paramRegex = /\[(\S+)\]/g;
+      var paramRegex = /\[(\S+?)\]/g;
       var currentResult = null;
       var dependencies = [];
       while(currentResult = paramRegex.exec(iParam)){
@@ -37,123 +37,108 @@
       return dependencies;
     }
 
-    // function getConcatSet(iSet1, iObj)
-
     function getDependenciesGraph(iParams){
-      var hashMap = {};
-      var graph = null;
+      var graph = new Graph();
+
+      function Graph(){
+        this.nodeMap = {};
+        this._visitId = 0;
+      }
+      Graph.prototype.getNode = function(iName){
+        var node = this.nodeMap[iName];
+        if(!node){
+          node = this.nodeMap[iName] = new Node(iName);
+        }
+        return node;
+      }
+      Graph.prototype.isResolvable = function(){
+        for(var nodeIdx in this.nodeMap){
+          this._visitId++;
+          var currentNode = this.nodeMap[nodeIdx];
+          if( ! currentNode.isResolved(this._visitId)){
+            return false;
+          }
+        }
+        return true;
+      }
 
       function Node(iName){
         this.name = iName;
-        this.isResolved = false;
+        this._resolved = false;
       }
       Node.prototype.addDependency = function(iNode){
         if(!this.dependencies)
           this.dependencies = [];
-        this.dependencies = _.union(this.dependencies, iNode);
+        this.dependencies = _.union(this.dependencies, [iNode]);
       }
-      Node.prototype.isResolved = function(){
-        if(!this.isResolved){
-          this.isResolved = true;
-          
+      Node.prototype.isResolved = function(iVisitId){
+        if(!this._resolved && (this._visitId == iVisitId)){
+          console.log(1)
+          return false;
+        }
+        if(!this._resolved){
+          this._visitId = iVisitId;
           for(var depIdx in this.dependencies){
             var currentDep = this.dependencies[depIdx];
-            if(!currentDep.isResolved()){
-              this.isResolved = false;
-              break;
+            if(!currentDep.isResolved(iVisitId)){
+              console.log(3)
+              this._resolved = false;
+              return false;
             }
           }
+          this._resolved = true;          
         }
-        return isResolved;
+        return this._resolved;
       }
 
       for(var paramName in iParams){
-        var currentParamObj = hashMap[paramName];
-        if(!currentParamObj){
-          currentParamObj = hashMap[paramName] = new Node(paramName);
-        }
+        var currentParamNode = graph.getNode(paramName);
         var currentParamValue = iParams[paramName];
         var dependencies = getDependenciesParams(currentParamValue);
-        console.log('param deps:',dependencies);
         
-        if(!currentParamObj['depends']){
-          currentParamObj['depends'] = [];
-        }
-
         for(var dependencyIdx in dependencies){
           var currentDependencyName = dependencies[dependencyIdx];
           var currentDependencyParam = iParams[currentDependencyName];
           if(currentDependencyParam == undefined){
             return null;
           }
-          var currentDependencyObj = hashMap[currentDependencyName];
-          if(!currentDependencyObj){
-            currentDependencyObj = hashMap[currentDependencyName] = new Node(currentDependencyName);
-          }
-          currentParamObj['depends'].push(currentDependencyObj);
+          var currentDependencyNode = graph.getNode(currentDependencyName);
+          currentParamNode.addDependency(currentDependencyNode);
         }
-        
-        console.log(JSON.stringify(hashMap,2,2));
 
       }
       return graph;
     }
 
+    // checkParams({'truc':'bidule'})
     function checkParams(iParams){
-      for(var paramIdx in iParams){
-        var currentParamValue = iParams[paramIdx];
-        var dependencies = getDependenciesParams(currentParamValue);
-        console.log('param deps:',dependencies);
-        
-        for(var dependencyIdx in dependencies){
-          var currentDependencyParam = iParams[dependencies[dependencyIdx]];
-          if(currentDependencyParam == undefined){
-            return false;
-          }
-          var dependencyDependencies = getDependenciesParams(currentDependencyParam);
-          console.log('dep param deps:',dependencyDependencies);
-          for (var depIdx in dependencyDependencies){
-            console.log('test current param:',paramIdx,' with ',dependencyDependencies[depIdx]);
-
-            if (dependencyDependencies[depIdx] === paramIdx) {
-              return false;
-            }
-          } 
-        }
-
+      var graph = getDependenciesGraph(iParams);
+      if(!graph){
+        return false;
       }
-      return true;
+      var isResolvable = graph.isResolvable();
+      if(isResolvable){
+      }
+      return isResolvable;
     }
 
-    function computeParams(iParams){
-      var result = {};
-      if(!checkParams(iParams)){
-        return null;
-      }
-
-      for(var paramName in iParams){
-        var currentParamValue = iParams[paramName];
-        var dependencies = getDependenciesParams(currentParamValue);
-        for(var depIdx in dependencies){
-          var currentDepName = dependencies[depIdx];
-          var currentDepValue = iParams[currentDepName];
-          
-          var findRegex = '\['+currentDepName+'\]';
-          var re = new RegExp(findRegex, 'g');
-           
-          result[paramName] = currentParamValue.replace(re, currentDepValue);
-        }
-
-      }
-      return result;
-    }
-
+    // injectParams('[a] [b]', {'a':'vincent', 'b':'se [c] son/sa [d] avec son/sa [e]', 'c':'tapoter', 'd':'cuisse', 'e':'bouteille plastique'})
     function injectParams(iData, iParams){
-      var computedParams = computeParams(iParams);
-      if(!computedParams){
+      if(!checkParams(iParams)){
         return iData;
       }
 
+      var paramRegexString = '\\[(\\S+?)\\]';
+      var paramRegex = new RegExp(paramRegexString, 'g');
+      var currentMatch = null;
+      while (currentMatch = paramRegex.exec(iData)){
+        var paramMatch = currentMatch[1];
+        var fullMatchRegex = '\\['+paramMatch+'\\]';
+        var re = new RegExp(fullMatchRegex, 'g');
+        iData = iData.replace(re, iParams[paramMatch]);
+        paramRegex.compile(paramRegexString);
+      }
+      return iData;
     }
 
     Polymer('vt-shell',{
