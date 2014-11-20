@@ -1,24 +1,26 @@
 <link rel="import" href="./vt-model-element.html">
-<script type="text/javascript" src="../underscore/underscore.js"></script>
+<link rel="import" href="../shy-injecter/shy-injecter.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-button/paper-button.html">
 
 <!-- events: statusChanged (enqueued, canceled, working, dropped) -->
-<polymer-element name="vt-shell" extends="vt-model-element" attributes="commandline output params">
+<polymer-element name="vt-shell" extends="vt-model-element" attributes="commandline output params autostart consumetasks" autostart="true" consumetasks="true">
   <template>
     <link rel="stylesheet" href="vt-shell.css"/>
+    <shy-injecter id="injecter"></shy-injecter>
     <div id="shellContainer">
       <template if="{{output}}">
         <div id="viewport"></div>
       </template>
-      <div id="shelltasksContainer">
-        <content id="content" select="vt-shelltask"></content>
-      </div>
+      <div id="shelltasksContainer"></div>
       <template if="{{commandline}}">
         <div id="inputbar">
-          <input id="commandInput"/>
-          <button on-click="{{clickEnqueueCallback}}">Enqueue</button>
+          <paper-input id="commandInput" label="command"></paper-input>
+          <paper-button raised on-click="{{clickEnqueueCallback}}">Enqueue</paper-button>
         </div>
       </template>
     </div>
+    <content id="content" select="vt-shelltask"></content>
   </template>
   <script>
     var ChildProcess = global.require('child_process');
@@ -27,133 +29,27 @@
     var _EndTransactionMarker = 'echo V15TEnd_';
     var _TransactionMarker = '_Trans_';
 
-    function getDependenciesParams(iParam){
-      var paramRegex = /\[(\S+?)\]/g;
-      var currentResult = null;
-      var dependencies = [];
-      while(currentResult = paramRegex.exec(iParam)){
-        dependencies = dependencies.concat(currentResult[1]);
-      }
-      return dependencies;
-    }
-
-    function getDependenciesGraph(iParams){
-      var graph = new Graph();
-
-      function Graph(){
-        this.nodeMap = {};
-        this._visitId = 0;
-      }
-      Graph.prototype.getNode = function(iName){
-        var node = this.nodeMap[iName];
-        if(!node){
-          node = this.nodeMap[iName] = new Node(iName);
-        }
-        return node;
-      }
-      Graph.prototype.isResolvable = function(){
-        for(var nodeIdx in this.nodeMap){
-          this._visitId++;
-          var currentNode = this.nodeMap[nodeIdx];
-          if( ! currentNode.isResolved(this._visitId)){
-            return false;
-          }
-        }
-        return true;
-      }
-
-      function Node(iName){
-        this.name = iName;
-        this._resolved = false;
-      }
-      Node.prototype.addDependency = function(iNode){
-        if(!this.dependencies)
-          this.dependencies = [];
-        this.dependencies = _.union(this.dependencies, [iNode]);
-      }
-      Node.prototype.isResolved = function(iVisitId){
-        if(!this._resolved && (this._visitId == iVisitId)){
-          console.log(1)
-          return false;
-        }
-        if(!this._resolved){
-          this._visitId = iVisitId;
-          for(var depIdx in this.dependencies){
-            var currentDep = this.dependencies[depIdx];
-            if(!currentDep.isResolved(iVisitId)){
-              console.log(3)
-              this._resolved = false;
-              return false;
-            }
-          }
-          this._resolved = true;          
-        }
-        return this._resolved;
-      }
-
-      for(var paramName in iParams){
-        var currentParamNode = graph.getNode(paramName);
-        var currentParamValue = iParams[paramName];
-        var dependencies = getDependenciesParams(currentParamValue);
-        
-        for(var dependencyIdx in dependencies){
-          var currentDependencyName = dependencies[dependencyIdx];
-          var currentDependencyParam = iParams[currentDependencyName];
-          if(currentDependencyParam == undefined){
-            return null;
-          }
-          var currentDependencyNode = graph.getNode(currentDependencyName);
-          currentParamNode.addDependency(currentDependencyNode);
-        }
-
-      }
-      return graph;
-    }
-
-    function escapeRegex(iTextRegex) {
-      return iTextRegex.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    };
-
-    function checkParams(iParams){
-      var graph = getDependenciesGraph(iParams);
-      if(!graph){
-        return false;
-      }
-      var isResolvable = graph.isResolvable();
-      if(isResolvable){
-      }
-      return isResolvable;
-    }
-
-    function injectParams(iData, iParams){
-      if(!checkParams(iParams)){
-        return iData;
-      }
-
-      var paramRegexString = '\\[(\\S+?)\\]';
-      var paramRegex = new RegExp(paramRegexString, 'g');
-      var currentMatch = null;
-      while (currentMatch = paramRegex.exec(iData)){
-        var paramMatch = currentMatch[1];
-        var fullMatchRegex = '\\['+escapeRegex(paramMatch)+'\\]';
-        var re = new RegExp(fullMatchRegex, 'g');
-        iData = iData.replace(re, iParams[paramMatch]);
-        paramRegex.compile(paramRegexString);
-      }
-      return iData;
-    }
-
     Polymer('vt-shell',{
       commandline: false,
       output: false,
-      params: {},
+      autostart: true,
+      consumetasks: true,
+      params: {'test' : 'yaw ! test is working !'},
+      paramsChanged: function(){
+        var shelltasks = this.$.shelltasksContainer.children;
+        for(var i in shelltasks){
+          shelltasks[i].params = this.params;
+        }
+      },
       created : function(){
         this.queue = Async.queue(this.doShellTask.bind(this), 1);
+        this.queue.pause();
         this.child_process = ChildProcess.spawn('cmd');
         this.fullOutput = '';
         this.locTransactionId = 0;
 
         var self = this;
+
         var stdoutCallback = function(data){
           self.fullOutput += data;
           if(self.output){
@@ -193,12 +89,9 @@
         this.child_process.stdin.write(iData);
       },
       write : function(iData){
-        var injectedData = injectParams(iData, this.params);
-
         this.rawWrite(iData);
       },
       doShellTask : function(iShellTaskElt, iCallback){
-        console.log('doShellTask');
         var self = this;
         var transactionId = _TransactionMarker+this.locTransactionId;
         
@@ -211,23 +104,37 @@
 
         iShellTaskElt.setAttribute("status", "working");
         this.write(_StartTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
-        this.write( (iShellTaskElt.command?iShellTaskElt.command:'') + '\n');
+
+        var injecter = this.$.injecter;
+        var command = iShellTaskElt.command ? iShellTaskElt.command : '';
+        if(injecter){
+          injecter.input = command;
+          injecter.params = this.params;
+          command = injecter.getInjected();
+        }
+
+        this.write( (command ? command : '') + '\n');
         this.write(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
 
         var dataBuffer='';
 
         var dataCallback = function(customEvent){
-          console.log('dataCallback');
           var stringData = customEvent.detail.toString();
           dataBuffer += stringData;
           if(RegExp(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId).test(stringData)){
-            console.log('dataCallbackmatch');
             iShellTaskElt.setAttribute('status','finished');
-            iShellTaskElt.remove();
+            
+            if(self.consumetasks === true)
+              iShellTaskElt.remove();
+            
             self.removeEventListener('stdout_data', stdoutCallback);
             self.removeEventListener('stderr_data', stderrCallback);
             self.locTransactionId++;
             
+            if(iShellTaskElt.completeCallback){
+              iShellTaskElt.completeCallback(null, dataBuffer);
+            }
+
             if(iCallback){
               iCallback(null, dataBuffer);
             }
@@ -252,15 +159,21 @@
         this.addEventListener('stderr_data', stderrCallback);
       },
       domReady : function(){
-        usershelltasks = this.$.content.getDistributedNodes();
-        // usershelltasks.forEach(this.addShellTaskElt.bind(this));
+        var usershelltasks = this.$.content.getDistributedNodes();
         for(var i in usershelltasks){
           this.addShellTaskElt(usershelltasks[i])
         }
+        if(this.autostart === true)
+          this.queue.resume();
+      },
+      enqueueShellTasks : function(){
+        var shelltasks = this.$.shelltasksContainer.children;
+        for(var i in shelltasks){
+          this.addShellTaskElt(shelltasks[i])
+        }
       },
       addShellTaskElt : function(iShellTaskElt){
-        console.log('addShellTaskElt');
-        if(!iShellTaskElt || !iShellTaskElt.setAttribute)
+        if(!iShellTaskElt || !iShellTaskElt.command)
           return;
 
         iShellTaskElt.setAttribute("status", "enqueued");
@@ -279,6 +192,12 @@
           return;
         
         this.addTaskData({ command: userCmd });
+      },
+      start : function(){
+        if(this.queue.idle())
+          this.enqueueShellTasks();
+        
+        this.queue.resume();
       }
     });
   </script>

@@ -15,6 +15,10 @@
   ],
   "dependencies": {
     "polymer": "latest",
-    "underscore": "latest"
+    "paper-input": "Polymer/paper-input#^0.5.0",
+    "paper-button": "Polymer/paper-button#^0.5.0",
+    "underscore": "latest",
+    "shy-injecter": "shycherry/shy-injecter#latest",
+    "vt-dnd-list": "shycherry/vt-dnd-list#latest"
   }
 }

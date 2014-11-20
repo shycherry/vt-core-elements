@@ -13,6 +13,10 @@
 }
 
 :host-context([status="enqueued"]){
+  background-color: rgba(0,0,255,0.1);
+}
+
+:host-context([status="finished"]){
   background-color: rgba(0,255,0,0.1);
 }
 
