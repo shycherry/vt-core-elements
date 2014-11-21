@@ -7,10 +7,10 @@
     <div on-click="{{cycleStatus}}">
       <link rel="stylesheet" href="vt-shelltask.css"/>
         <template if="{{injected == command}}">
-          <b>{{command}}</b>
+          {{command}}
         </template>
         <template if="{{injected != command}}">
-          <b>{{injected}}</b> - <i>{{command}}</i>
+          {{injected}} - <i>{{command}}</i>
         </template>
     </div>
   </template>

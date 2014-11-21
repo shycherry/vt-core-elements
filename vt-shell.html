@@ -37,7 +37,8 @@
       params: {'test' : 'yaw ! test is working !'},
       paramsChanged: function(){
         var shelltasks = this.$.shelltasksContainer.children;
-        for(var i in shelltasks){
+        var nbShelltasks = this.$.shelltasksContainer.children.length;
+        for(var i = 0; i< nbShelltasks; i++){
           this.injectParams(shelltasks[i]);
         }
       },
@@ -118,7 +119,7 @@
         if(iShellTaskElt.status === 'canceled'){
           iShellTaskElt.setAttribute("status", "dropped");
           
-          if(self.consumetasks === true)
+          if(self.consumetasks == true)
             iShellTaskElt.remove();
           
           if(iCallback) iCallback();
@@ -139,7 +140,7 @@
           if(RegExp(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId).test(stringData)){
             iShellTaskElt.setAttribute('status','finished');
             
-            if(self.consumetasks === true)
+            if(self.consumetasks == true)
               iShellTaskElt.remove();
             
             self.removeEventListener('stdout_data', stdoutCallback);
@@ -178,12 +179,13 @@
         for(var i in usershelltasks){
           this.addShellTaskElt(usershelltasks[i])
         }
-        if(this.autostart === true)
+        if(this.autostart == true)
           this.queue.resume();
       },
       enqueueShellTasks : function(){
         var shelltasks = this.$.shelltasksContainer.children;
-        for(var i in shelltasks){
+        var nbShelltasks = this.$.shelltasksContainer.children.length;
+        for(var i = 0; i< nbShelltasks; i++){
           this.addShellTaskElt(shelltasks[i])
         }
       },
@@ -192,7 +194,10 @@
           return;
 
         iShellTaskElt.setAttribute("status", "enqueued");
-        this.$.shelltasksContainer.appendChild(iShellTaskElt);
+        
+        if( iShellTaskElt.parentNode != this.$.shelltasksContainer)
+          this.$.shelltasksContainer.appendChild(iShellTaskElt);
+        
         this.queue.push(iShellTaskElt);
       },
       addTaskData : function(iTask){
