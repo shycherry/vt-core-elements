@@ -38,7 +38,7 @@
       paramsChanged: function(){
         var shelltasks = this.$.shelltasksContainer.children;
         for(var i in shelltasks){
-          shelltasks[i].params = this.params;
+          this.injectParams(shelltasks[i]);
         }
       },
       created : function(){
@@ -49,6 +49,15 @@
         this.locTransactionId = 0;
 
         var self = this;
+
+        var onCommandChanged = function(e){
+          console.log(e);
+          if(e && e.detail && e.detail.shelltask){
+             self.injectParams(e.detail.shelltask);
+          }
+        }
+
+        this.addEventListener('commandChanged', onCommandChanged);
 
         var stdoutCallback = function(data){
           self.fullOutput += data;
@@ -69,6 +78,17 @@
         this.child_process.stdout.on('data', stdoutCallback);
         this.child_process.stderr.on('data', stderrCallback);
         this.child_process.on('exit', function(){console.log('child_process exited')});
+      },
+      injectParams : function(iShellTaskElt){
+        if(iShellTaskElt){
+          var injecter = this.$.injecter;
+          var command = iShellTaskElt.command;
+          if(injecter && command){
+            injecter.input = command;
+            injecter.params = this.params;
+          }
+          iShellTaskElt.injected = injecter.getInjected();
+        }
       },
       encodeHTML : function(iText){
         if(! iText){
@@ -97,22 +117,17 @@
         
         if(iShellTaskElt.status === 'canceled'){
           iShellTaskElt.setAttribute("status", "dropped");
-          iShellTaskElt.remove();
+          
+          if(self.consumetasks === true)
+            iShellTaskElt.remove();
+          
           if(iCallback) iCallback();
           return;
         }
 
         iShellTaskElt.setAttribute("status", "working");
         this.write(_StartTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
-
-        var injecter = this.$.injecter;
-        var command = iShellTaskElt.command ? iShellTaskElt.command : '';
-        if(injecter){
-          injecter.input = command;
-          injecter.params = this.params;
-          command = injecter.getInjected();
-        }
-
+        var command = iShellTaskElt.injected || iShellTaskElt.command;
         this.write( (command ? command : '') + '\n');
         this.write(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
 

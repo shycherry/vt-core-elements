@@ -1,26 +1,26 @@
 <link rel="import" href="./vt-model-element.html">
-<link rel="import" href="../shy-injecter/shy-injecter.html">
 
-<!-- events: statusChanged (enqueued, canceled, working, dropped, finished) -->
-<polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status params" status="enqueued">
+<!-- events:  statusChanged (enqueued, canceled, working, dropped, finished) 
+              commandChanged-->
+<polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status" status="enqueued">
   <template>
-    <shy-injecter id="injecter"></shy-injecter>
     <div on-click="{{cycleStatus}}">
       <link rel="stylesheet" href="vt-shelltask.css"/>
-      #{{elt_id}} - {{command}} - {{injected}}
+        <template if="{{injected == command}}">
+          <b>{{command}}</b>
+        </template>
+        <template if="{{injected != command}}">
+          <b>{{injected}}</b> - <i>{{command}}</i>
+        </template>
     </div>
   </template>
   <script>
     Polymer('vt-shelltask',{
       command : "ls",
-      status: "unknown",
       injected : "",
-      params : {},
-      paramsChanged: function(){
-        this.injectParams();
-      },
-      commandChanged: function(){
-        this.injectParams();
+      status: "unknown",
+      observe: {
+        command : 'notifyCommandChanged',
       },
       dataChanged : function(){
         this.command = this.data.command;
@@ -28,15 +28,8 @@
       cycleStatus : function(){
         this.setAttribute('status', (this.status == 'canceled') ? 'enqueued' : 'canceled' );
       },
-      injectParams : function(){
-        var injecter = this.$.injecter;
-        var command = this.command ? this.command : '';
-        if(injecter){
-          injecter.input = command;
-          injecter.params = this.params;
-          command = injecter.getInjected();
-        }
-        this.injected = command;
+      notifyCommandChanged : function(){
+        this.fire('commandChanged', {'shelltask' : this});
       }
     });
   </script>
