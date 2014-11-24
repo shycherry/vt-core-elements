@@ -23,3 +23,8 @@
 :host {
   display: block;
 }
+
+:host #subTasks {
+  margin-left: 1em;
+}
+

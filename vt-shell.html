@@ -12,7 +12,9 @@
       <template if="{{output}}">
         <div id="viewport"></div>
       </template>
-      <div id="shelltasksContainer"></div>
+      <div id="shelltasksContainer">
+        <content id="content" select="vt-shelltask"></content>
+      </div>
       <template if="{{commandline}}">
         <div id="inputbar">
           <paper-input id="commandInput" label="command"></paper-input>
@@ -20,7 +22,6 @@
         </div>
       </template>
     </div>
-    <content id="content" select="vt-shelltask"></content>
   </template>
   <script>
     var ChildProcess = global.require('child_process');

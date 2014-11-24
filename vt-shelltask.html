@@ -1,7 +1,5 @@
 <link rel="import" href="./vt-model-element.html">
 
-<!-- events:  statusChanged (enqueued, canceled, working, dropped, finished) 
-              commandChanged-->
 <polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status" status="enqueued">
   <template>
     <div on-click="{{cycleStatus}}">
@@ -12,6 +10,9 @@
         <template if="{{injected != command}}">
           {{injected}} - <i>{{command}}</i>
         </template>
+    </div>
+    <div id="subTasks">
+      <content></content>
     </div>
   </template>
   <script>
