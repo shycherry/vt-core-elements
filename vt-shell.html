@@ -1,4 +1,5 @@
 <link rel="import" href="./vt-model-element.html">
+<link rel="import" href="./vt-shellworker.html">
 <link rel="import" href="../shy-injecter/shy-injecter.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-button/paper-button.html">
@@ -7,6 +8,7 @@
 <polymer-element name="vt-shell" extends="vt-model-element" attributes="commandline output params autostart consumetasks" autostart="true" consumetasks="true">
   <template>
     <link rel="stylesheet" href="vt-shell.css"/>
+    <vt-shellworker id="worker"></vt-shellworker>
     <shy-injecter id="injecter"></shy-injecter>
     <div id="shellContainer">
       <template if="{{output}}">
@@ -23,6 +25,7 @@
       </template>
     </div>
   </template>
+  <script type="text/javascript" src="../underscore/underscore.js"></script>
   <script>
     var ChildProcess = global.require('child_process');
     var Async = global.require('async');
@@ -36,9 +39,10 @@
       autostart: true,
       consumetasks: true,
       params: {'test' : 'yaw ! test is working !'},
+      shelltasks : [],
       paramsChanged: function(){
-        var shelltasks = this.$.shelltasksContainer.children;
-        var nbShelltasks = this.$.shelltasksContainer.children.length;
+        var shelltasks = this.shelltasks;//this.$.shelltasksContainer.children;
+        var nbShelltasks = shelltasks.length;//this.$.shelltasksContainer.children.length;
         for(var i = 0; i< nbShelltasks; i++){
           this.injectParams(shelltasks[i]);
         }
@@ -184,8 +188,8 @@
           this.queue.resume();
       },
       enqueueShellTasks : function(){
-        var shelltasks = this.$.shelltasksContainer.children;
-        var nbShelltasks = this.$.shelltasksContainer.children.length;
+        var shelltasks = this.shelltasks;//this.$.shelltasksContainer.children;
+        var nbShelltasks = shelltasks.length; //this.$.shelltasksContainer.children.length;
         for(var i = 0; i< nbShelltasks; i++){
           this.addShellTaskElt(shelltasks[i])
         }
@@ -195,9 +199,12 @@
           return;
 
         iShellTaskElt.setAttribute("status", "enqueued");
+        iShellTaskElt.setWorker(this.$.worker);
         
-        if( iShellTaskElt.parentNode != this.$.shelltasksContainer)
-          this.$.shelltasksContainer.appendChild(iShellTaskElt);
+        // if( iShellTaskElt.parentNode != this.$.shelltasksContainer)
+        //   this.$.shelltasksContainer.appendChild(iShellTaskElt);
+
+        this.shelltasks.push(iShellTaskElt);
         
         this.queue.push(iShellTaskElt);
       },

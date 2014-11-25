@@ -1,0 +1,100 @@
+<link rel="import" href="./vt-model-element.html">
+<link rel="import" href="../shy-injecter/shy-injecter.html">
+
+<polymer-element name="vt-shellworker" extends="vt-model-element" attributes="params">
+  <template>
+    <shy-injecter id="injecter"></shy-injecter>
+  </template>
+  <script type="text/javascript" src="../underscore/underscore.js"></script>
+  <script>
+    var ChildProcess = global.require('child_process');
+    var Async = global.require('async');
+    var _StartTransactionMarker = 'echo V15TStart_';
+    var _EndTransactionMarker = 'echo V15TEnd_';
+    var _TransactionMarker = '_Trans_';
+
+    Polymer('vt-shellworker',{
+      params: {'test' : 'yaw ! test is working !'},
+      created : function(){
+        this.queue = Async.queue(this.doShellTask.bind(this), 1);
+        this.queue.pause();
+        this.child_process = ChildProcess.spawn('cmd');
+        this.locTransactionId = 0;
+
+        var self = this;
+
+        var stdoutCallback = function(data){
+          self.fire('stdout_data', data);
+        };
+
+        var stderrCallback = function(data){
+          self.fire('stderr_data', data);
+        };
+        
+        this.child_process.stdout.on('data', stdoutCallback);
+        this.child_process.stderr.on('data', stderrCallback);
+        this.child_process.on('exit', function(){console.log('child_process exited')});
+      },
+      paramsChanged : function(){
+        this.fire('params_changed');
+      },
+      write : function(iData){
+        this.child_process.stdin.write(iData);
+      },
+      doShellTask : function(iShellTaskElt, iCallback){
+        var self = this;
+        var transactionId = _TransactionMarker+this.locTransactionId;
+        
+        this.write(_StartTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
+        var command = iShellTaskElt.injected || iShellTaskElt.command;
+        this.write( (command ? command : '') + '\n');
+        this.write(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
+
+        var dataBuffer='';
+
+        var dataCallback = function(customEvent){
+          var stringData = customEvent.detail.toString();
+          dataBuffer += stringData;
+          if(RegExp(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId).test(stringData)){
+            self.removeEventListener('stdout_data', stdoutCallback);
+            self.removeEventListener('stderr_data', stderrCallback);
+            self.locTransactionId++;
+            
+            if(iShellTaskElt.completeCallback){
+              iShellTaskElt.completeCallback(null, dataBuffer);
+            }
+
+            if(iCallback){
+              iCallback(null, dataBuffer);
+            }
+          }
+        };
+
+        var stdoutCallback = function(customEvent){          
+          dataCallback(customEvent);
+          if(iShellTaskElt.stdoutCallback){
+            iShellTaskElt.stdoutCallback(customEvent);
+          }
+        };
+
+        var stderrCallback = function(customEvent){
+          dataCallback(customEvent);
+          if(iShellTaskElt.stderrCallback){
+            iShellTaskElt.stderrCallback(customEvent);
+          }
+        };
+
+        this.addEventListener('stdout_data', stdoutCallback);
+        this.addEventListener('stderr_data', stderrCallback);
+      },
+      pushShellTaskElt : function(iShellTaskElt){
+        if(!iShellTaskElt || !iShellTaskElt.command)
+          return;        
+        this.queue.push(iShellTaskElt);
+      },
+      getInjecter : function(){
+        return this.$.injecter;
+      }
+    });
+  </script>
+</polymer-element>

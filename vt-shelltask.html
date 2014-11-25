@@ -12,14 +12,17 @@
         </template>
     </div>
     <div id="subTasks">
-      <content></content>
+      <content id="subTasksContent" select="vt-shelltask"></content>
     </div>
   </template>
   <script>
+    var Async = global.require('async');
+
     Polymer('vt-shelltask',{
       command : "ls",
       injected : "",
-      status: "unknown",
+      status: "enqueued",
+      shellworker : null,
       observe: {
         command : 'notifyCommandChanged',
       },
@@ -27,10 +30,86 @@
         this.command = this.data.command;
       },
       cycleStatus : function(){
-        this.setAttribute('status', (this.status == 'canceled') ? 'enqueued' : 'canceled' );
+        this.status = (this.status == 'canceled') ? 'enqueued' : 'canceled';
+        this.setAttribute('status', this.status);
       },
       notifyCommandChanged : function(){
         this.fire('commandChanged', {'shelltask' : this});
+      },
+      setWorker : function(iShellWorker){
+        if(this.shellworker && this.myParamsListener)
+        {
+          this.shellworker.removeEventListener('params_changed', this.myParamsListener);
+          delete this.myParamsListener;
+        }
+        this.shellworker = iShellWorker;
+        this.injectWorkerParams();
+        {
+          this.myParamsListener = this.injectWorkerParams.bind(this);
+          this.shellworker.addEventListener('params_changed', this.myParamsListener);
+        }
+      },
+      injectWorkerParams : function(){
+        var worker = this.shellworker;
+        if(! worker) {return;}        
+        var injecter = worker.getInjecter();
+        if(! injecter) {return;}
+        injecter.input = this.command;
+        injecter.params = worker.params;
+        this.injected = injecter.getInjected();
+      },
+      doTask : function(iCallback){
+        var tasks = [];
+        var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+        for (var i = 0; i < subTasksNodes.length; i++) {
+          var currentTaskNode = subTasksNodes[i];
+          tasks.push(currentTaskNode.doTask.bind(currentTaskNode));
+        }
+
+        var thisTask = function(iCallback){
+          iCallback = (iCallback)? iCallback : _.noop;
+          var shellworker = this.shellworker;
+          
+          if(!shellworker){
+            iCallback('no worker');
+            return;
+          }
+
+          if(this.status != 'enqueued'){
+            iCallback();
+            return;
+          }
+
+          var thisTaskStdoutCallback = function(customEvent){
+            this.status = 'working';
+            if(this.stdoutCallback){
+              this.stdoutCallback(customEvent);
+            }
+          }.bind(this);
+
+          var thisTaskStderrCallback = function(customEvent){
+            this.status = 'working';
+            this.setAttribute('status', this.status);
+            if(this.stderrCallback){
+              this.stderrCallback(customEvent);
+            }
+          }.bind(this);
+
+          var thisTaskFinishedCallback = function(err, result){
+            this.status = 'finished';
+            this.setAttribute('status', this.status);
+            shellworker.removeEventListener('stdout_data', thisTaskStdoutCallback);
+            shellworker.removeEventListener('stderr_data', thisTaskStderrCallback);
+            iCallback(err, result);
+          }.bind(this);
+
+          shellworker.addEventListener('stdout_data', thisTaskStdoutCallback);
+          shellworker.addEventListener('stderr_data', thisTaskStderrCallback);
+          shellworker.doShellTask(this, thisTaskFinishedCallback);
+        }
+
+        tasks.push(thisTask.bind(this));
+        Async.series(tasks, iCallback);
       }
     });
   </script>
