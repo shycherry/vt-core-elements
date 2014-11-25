@@ -8,7 +8,6 @@
   <script type="text/javascript" src="../underscore/underscore.js"></script>
   <script>
     var ChildProcess = global.require('child_process');
-    var Async = global.require('async');
     var _StartTransactionMarker = 'echo V15TStart_';
     var _EndTransactionMarker = 'echo V15TEnd_';
     var _TransactionMarker = '_Trans_';
@@ -16,8 +15,6 @@
     Polymer('vt-shellworker',{
       params: {'test' : 'yaw ! test is working !'},
       created : function(){
-        this.queue = Async.queue(this.doShellTask.bind(this), 1);
-        this.queue.pause();
         this.child_process = ChildProcess.spawn('cmd');
         this.locTransactionId = 0;
 
@@ -90,7 +87,6 @@
       pushShellTaskElt : function(iShellTaskElt){
         if(!iShellTaskElt || !iShellTaskElt.command)
           return;        
-        this.queue.push(iShellTaskElt);
       },
       getInjecter : function(){
         return this.$.injecter;
