@@ -39,6 +39,7 @@
         this.child_process.stdin.write(iData);
       },
       doShellTask : function(iShellTaskElt, iCallback){
+        iCallback = (iCallback)? iCallback : _.noop;
         var self = this;
         var transactionId = _TransactionMarker+this.locTransactionId;
         
@@ -56,29 +57,16 @@
             self.removeEventListener('stdout_data', stdoutCallback);
             self.removeEventListener('stderr_data', stderrCallback);
             self.locTransactionId++;
-            
-            if(iShellTaskElt.completeCallback){
-              iShellTaskElt.completeCallback(null, dataBuffer);
-            }
-
-            if(iCallback){
-              iCallback(null, dataBuffer);
-            }
+            iCallback(null, dataBuffer);
           }
         };
 
         var stdoutCallback = function(customEvent){          
           dataCallback(customEvent);
-          if(iShellTaskElt.stdoutCallback){
-            iShellTaskElt.stdoutCallback(customEvent);
-          }
         };
 
         var stderrCallback = function(customEvent){
           dataCallback(customEvent);
-          if(iShellTaskElt.stderrCallback){
-            iShellTaskElt.stderrCallback(customEvent);
-          }
         };
 
         this.addEventListener('stdout_data', stdoutCallback);

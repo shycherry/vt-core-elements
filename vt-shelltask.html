@@ -1,72 +1,60 @@
-<link rel="import" href="./vt-model-element.html">
+<link rel="import" href="./vt-shellworkable.html">
 
-<polymer-element name="vt-shelltask" extends="vt-model-element" attributes="command status" status="enqueued">
+<polymer-element name="vt-shelltask" extends="vt-shellworkable" attributes="command">
   <template>
+    <link rel="stylesheet" href="vt-shelltask.css"/>
     <div on-click="{{cycleStatus}}">
-      <link rel="stylesheet" href="vt-shelltask.css"/>
-        <template if="{{injected == command}}">
-          {{command}}
-        </template>
-        <template if="{{injected != command}}">
-          {{injected}} - <i>{{command}}</i>
-        </template>
-    </div>
-    <div id="subTasks">
-      <content id="subTasksContent" select="vt-shelltask"></content>
+      <template if="{{injected == command}}">
+        {{command}}
+      </template>
+      <template if="{{injected != command}}">
+        {{injected}} - <i>{{command}}</i>
+      </template>
     </div>
   </template>
   <script>
-    var Async = global.require('async');
-
-    Polymer('vt-shelltask',{
-      command : "ls",
-      injected : "",
-      status: "enqueued",
-      shellworker : null,
-      observe: {
-        command : 'notifyCommandChanged',
-      },
-      dataChanged : function(){
-        this.command = this.data.command;
-      },
-      cycleStatus : function(){
-        this.status = (this.status == 'canceled') ? 'enqueued' : 'canceled';
-        this.setAttribute('status', this.status);
-      },
-      notifyCommandChanged : function(){
-        this.fire('commandChanged', {'shelltask' : this});
-      },
-      setWorker : function(iShellWorker){
-        if(this.shellworker && this.myParamsListener)
-        {
-          this.shellworker.removeEventListener('params_changed', this.myParamsListener);
-          delete this.myParamsListener;
-        }
-        this.shellworker = iShellWorker;
-        this.injectWorkerParams();
-        {
+    (function(){
+      var Async = global.require('async');
+      
+      Polymer('vt-shelltask',{
+        command : "ls",
+        injected : "",
+        observe: {
+          command : 'notifyCommandChanged',
+        },
+        dataChanged : function(){
+          this.command = this.data.command;
+        },
+        notifyCommandChanged : function(){
+          this.fire('commandChanged', {'shelltask' : this});
+        },
+        bindWorker : function(){
           this.myParamsListener = this.injectWorkerParams.bind(this);
           this.shellworker.addEventListener('params_changed', this.myParamsListener);
-        }
-      },
-      injectWorkerParams : function(){
-        var worker = this.shellworker;
-        if(! worker) {return;}        
-        var injecter = worker.getInjecter();
-        if(! injecter) {return;}
-        injecter.input = this.command;
-        injecter.params = worker.params;
-        this.injected = injecter.getInjected();
-      },
-      doTask : function(iCallback){
-        var tasks = [];
-        var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
-        for (var i = 0; i < subTasksNodes.length; i++) {
-          var currentTaskNode = subTasksNodes[i];
-          tasks.push(currentTaskNode.doTask.bind(currentTaskNode));
-        }
-
-        var thisTask = function(iCallback){
+          this.super();
+        },
+        unbindWorker : function(){
+          if(this.shellworker && this.myParamsListener)
+          {
+            this.shellworker.removeEventListener('params_changed', this.myParamsListener);
+            delete this.myParamsListener;
+          }
+          this.super();
+        },
+        setWorker : function(iShellWorker){
+          this.super(arguments);
+          this.injectWorkerParams();
+        },
+        injectWorkerParams : function(){
+          var worker = this.shellworker;
+          if(! worker) {return;}        
+          var injecter = worker.getInjecter();
+          if(! injecter) {return;}
+          injecter.input = this.command;
+          injecter.params = worker.params;
+          this.injected = injecter.getInjected();
+        },
+        doTask : function(iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
           var shellworker = this.shellworker;
           
@@ -81,23 +69,24 @@
           }
 
           var thisTaskStdoutCallback = function(customEvent){
-            this.status = 'working';
+            this.setAttribute('status', 'working');
             if(this.stdoutCallback){
               this.stdoutCallback(customEvent);
             }
           }.bind(this);
 
           var thisTaskStderrCallback = function(customEvent){
-            this.status = 'working';
-            this.setAttribute('status', this.status);
+            this.setAttribute('status', 'working');
             if(this.stderrCallback){
               this.stderrCallback(customEvent);
             }
           }.bind(this);
 
           var thisTaskFinishedCallback = function(err, result){
-            this.status = 'finished';
-            this.setAttribute('status', this.status);
+            this.setAttribute('status', 'finished');
+            if(this.completeCallback){
+              this.completeCallback(null, result);
+            }
             shellworker.removeEventListener('stdout_data', thisTaskStdoutCallback);
             shellworker.removeEventListener('stderr_data', thisTaskStderrCallback);
             iCallback(err, result);
@@ -107,10 +96,7 @@
           shellworker.addEventListener('stderr_data', thisTaskStderrCallback);
           shellworker.doShellTask(this, thisTaskFinishedCallback);
         }
-
-        tasks.push(thisTask.bind(this));
-        Async.series(tasks, iCallback);
-      }
-    });
+      });
+    })();
   </script>
 </polymer-element>

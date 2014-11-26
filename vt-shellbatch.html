@@ -1,0 +1,87 @@
+<link rel="import" href="./vt-shellworkable.html">
+
+<polymer-element name="vt-shellbatch" extends="vt-shellworkable" attributes="batchname">
+  <template>
+    <div on-click="{{cycleStatus}}">
+      <link rel="stylesheet" href="vt-shellbatch.css"/>
+      <template if="{{'' != batchname}}">
+        <b>{{batchname}}</b>
+      </template>
+      <div id="subTasks">
+        <content id="subTasksContent" select="vt-shelltask, vt-shellbatch"></content>
+      </div>
+    </div>
+  </template>
+  <script>
+    (function(){
+      var Async = global.require('async');
+      
+      Polymer('vt-shellbatch',{
+        batchname : '',
+        bindWorker : function(){
+          this.super();
+        },
+        unbindWorker : function(){
+          this.super();
+        },
+        setWorker : function(iShellWorker){
+          var subWorkableNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subWorkableNodes.length; i++) {
+            subWorkableNodes[i].setWorker(iShellWorker);
+          }
+          this.super(arguments);
+        },
+        doTask : function(iCallback){
+          iCallback = (iCallback)? iCallback : _.noop;
+          var shellworker = this.shellworker;
+
+          if(!shellworker){
+            iCallback('no worker');
+            return;
+          }
+
+          if(this.status != 'enqueued'){
+            iCallback();
+            return;
+          }
+
+          var tasks = [];
+          var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subTasksNodes.length; i++) {
+            var currentTaskNode = subTasksNodes[i];
+            tasks.push(currentTaskNode.doTask.bind(currentTaskNode));
+          }
+
+          var thisBatchStdoutCallback = function(customEvent){
+            this.setAttribute('status', 'working');
+            if(this.stdoutCallback){
+              this.stdoutCallback(customEvent);
+            }
+          }.bind(this);
+
+          var thisBatchStderrCallback = function(customEvent){
+            this.setAttribute('status', 'working');
+            if(this.stderrCallback){
+              this.stderrCallback(customEvent);
+            }
+          }.bind(this);
+          
+          var thisBatchFinishedCallback = function(err, result){
+            this.setAttribute('status', 'finished');
+            if(this.completeCallback){
+              this.completeCallback(null, result);
+            }
+            shellworker.removeEventListener('stdout_data', thisBatchStdoutCallback);
+            shellworker.removeEventListener('stderr_data', thisBatchStderrCallback);
+            iCallback(err, result);
+          }.bind(this);
+
+          shellworker.addEventListener('stdout_data', thisBatchStdoutCallback);
+          shellworker.addEventListener('stderr_data', thisBatchStderrCallback);
+
+          Async.series(tasks, thisBatchFinishedCallback);
+        }
+      });
+    })();
+  </script>
+</polymer-element>

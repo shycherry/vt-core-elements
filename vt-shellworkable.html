@@ -1,0 +1,35 @@
+<link rel="import" href="./vt-model-element.html">
+
+<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status" status="enqueued">
+  <template>
+    <link rel="stylesheet" href="vt-shellworkable.css"/>
+  </template>
+  <script type="text/javascript" src="../underscore/underscore.js"></script>
+  <script>
+    (function(){
+      var Async = global.require('async');
+
+      Polymer('vt-shellworkable',{
+        status: "enqueued",
+        shellworker : null,
+        cycleStatus : function(){
+          this.status = (this.status == 'canceled') ? 'enqueued' : 'canceled';
+          this.setAttribute('status', this.status);
+        },
+        bindWorker : function(){
+        },
+        unbindWorker : function(){
+        },
+        setWorker : function(iShellWorker){
+          this.unbindWorker();
+          this.shellworker = iShellWorker;
+          this.bindWorker();
+        },
+        doTask : function(iCallback){
+          iCallback = (iCallback)? iCallback : _.noop;
+          iCallback();
+        }
+      });
+    })();
+  </script>
+</polymer-element>
