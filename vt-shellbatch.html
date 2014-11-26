@@ -40,7 +40,15 @@
             var currentTaskNode = subTasksNodes[i];
             tasks.push(currentTaskNode.doTask.bind(currentTaskNode));
           }
-          Async.series(tasks, iCallback);
+
+          var thisFinishCallback = function(err, results){
+            results = _.flatten(results);
+            results = _.compact(results);
+
+            iCallback(err, results.join());
+          }.bind(this);
+
+          Async.series(tasks, thisFinishCallback);
         }
       });
     })();

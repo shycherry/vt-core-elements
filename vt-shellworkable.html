@@ -19,6 +19,9 @@
           else if(this.status == 'canceled')
             this.setAttribute('status', 'enqueued');
         },
+        resetStatus : function(){
+          this.setAttribute('status', 'enqueued');
+        },
         bindWorker : function(){
         },
         unbindWorker : function(){
