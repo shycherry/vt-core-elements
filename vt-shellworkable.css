@@ -4,19 +4,20 @@
   to {-webkit-filter : opacity(1);}
 }
 
-:host-context([status="working"]){
+:host([status="working"]){
   -webkit-animation: working 1s infinite;
 }
 
-:host-context([status="canceled"]){
+:host([status="canceled"]){
   background-color: rgba(0,0,0,0.5);
+  text-decoration: line-through;
 }
 
-:host-context([status="enqueued"]){
+:host([status="enqueued"]){
   background-color: rgba(0,0,255,0.1);
 }
 
-:host-context([status="finished"]){
+:host([status="finished"]){
   background-color: rgba(0,255,0,0.1);
 }
 

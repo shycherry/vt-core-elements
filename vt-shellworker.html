@@ -38,7 +38,8 @@
       write : function(iData){
         this.child_process.stdin.write(iData);
       },
-      doShellTask : function(iShellTaskElt, iCallback){
+      // doCommand
+      doShellTask : function(iShellTaskElt, iCallback){ 
         iCallback = (iCallback)? iCallback : _.noop;
         var self = this;
         var transactionId = _TransactionMarker+this.locTransactionId;

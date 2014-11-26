@@ -12,9 +12,12 @@
       Polymer('vt-shellworkable',{
         status: "enqueued",
         shellworker : null,
-        cycleStatus : function(){
-          this.status = (this.status == 'canceled') ? 'enqueued' : 'canceled';
-          this.setAttribute('status', this.status);
+        cycleStatus : function(ev){
+          ev.stopPropagation();
+          if(this.status == 'enqueued')
+            this.setAttribute('status', 'canceled');
+          else if(this.status == 'canceled')
+            this.setAttribute('status', 'enqueued');
         },
         bindWorker : function(){
         },
@@ -27,7 +30,47 @@
         },
         doTask : function(iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
-          iCallback();
+          this.workOnTask(this.task.bind(this), iCallback);
+        },
+        workOnTask : function(iTask, iCallback){
+          iCallback = (iCallback) ? iCallback : _.noop;
+          var shellworker = this.shellworker;
+          
+          if(!shellworker || !iTask){
+            iCallback();
+            return;
+          }
+
+          if(this.status != 'enqueued'){
+            iCallback();
+            return;
+          }
+
+          var thisStdoutCallback = function(customEvent){
+            if(this.stdoutCallback){
+              this.stdoutCallback(customEvent);
+            }
+          }.bind(this);
+
+          var thisStderrCallback = function(customEvent){
+            if(this.stderrCallback){
+              this.stderrCallback(customEvent);
+            }
+          }.bind(this);
+          
+          var thisFinishedCallback = function(err, result){
+            this.setAttribute('status', 'finished');
+            if(this.completeCallback){
+              this.completeCallback(err, result);
+            }
+            shellworker.removeEventListener('stdout_data', thisStdoutCallback);
+            shellworker.removeEventListener('stderr_data', thisStderrCallback);
+            iCallback(err, result);
+          }.bind(this);
+
+          this.setAttribute('status', 'working');
+
+          iTask(thisFinishedCallback);
         }
       });
     })();

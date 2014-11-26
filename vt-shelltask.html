@@ -14,8 +14,6 @@
   </template>
   <script>
     (function(){
-      var Async = global.require('async');
-      
       Polymer('vt-shelltask',{
         command : "ls",
         injected : "",
@@ -54,7 +52,7 @@
           injecter.params = worker.params;
           this.injected = injecter.getInjected();
         },
-        doTask : function(iCallback){
+        task : function(iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
           var shellworker = this.shellworker;
           
@@ -63,38 +61,7 @@
             return;
           }
 
-          if(this.status != 'enqueued'){
-            iCallback();
-            return;
-          }
-
-          var thisTaskStdoutCallback = function(customEvent){
-            this.setAttribute('status', 'working');
-            if(this.stdoutCallback){
-              this.stdoutCallback(customEvent);
-            }
-          }.bind(this);
-
-          var thisTaskStderrCallback = function(customEvent){
-            this.setAttribute('status', 'working');
-            if(this.stderrCallback){
-              this.stderrCallback(customEvent);
-            }
-          }.bind(this);
-
-          var thisTaskFinishedCallback = function(err, result){
-            this.setAttribute('status', 'finished');
-            if(this.completeCallback){
-              this.completeCallback(null, result);
-            }
-            shellworker.removeEventListener('stdout_data', thisTaskStdoutCallback);
-            shellworker.removeEventListener('stderr_data', thisTaskStderrCallback);
-            iCallback(err, result);
-          }.bind(this);
-
-          shellworker.addEventListener('stdout_data', thisTaskStdoutCallback);
-          shellworker.addEventListener('stderr_data', thisTaskStderrCallback);
-          shellworker.doShellTask(this, thisTaskFinishedCallback);
+          shellworker.doShellTask(this, iCallback);
         }
       });
     })();
