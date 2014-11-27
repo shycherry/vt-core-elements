@@ -1,8 +1,13 @@
 <link rel="import" href="./vt-model-element.html">
+<link rel="import" href="../paper-checkbox/paper-checkbox.html">
 
-<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status" status="enqueued">
+<!-- status : activated, deactivated, enqueued, working, canceled, finished -->
+<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status" status="activated">
   <template>
     <link rel="stylesheet" href="vt-shellworkable.css"/>
+    <template if="{{status=='activated' || status=='deactivated'}}">
+      <paper-checkbox id="checkActiv"></paper-checkbox>
+    </template>
   </template>
   <script type="text/javascript" src="../underscore/underscore.js"></script>
   <script>
@@ -20,7 +25,7 @@
             this.setAttribute('status', 'enqueued');
         },
         resetStatus : function(){
-          this.setAttribute('status', 'enqueued');
+          this.setAttribute('status', 'activated');
         },
         bindWorker : function(){
         },

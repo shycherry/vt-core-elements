@@ -1,16 +1,18 @@
 <link rel="import" href="./vt-shellworkable.html">
+<link rel="import" href="../paper-item/paper-item.html">
 
 <polymer-element name="vt-shelltask" extends="vt-shellworkable" attributes="command">
   <template>
     <link rel="stylesheet" href="vt-shelltask.css"/>
-    <div on-click="{{cycleStatus}}">
+    <paper-item raised>
+      <shadow id="parent"></shadow>
       <template if="{{injected == command}}">
         {{command}}
       </template>
       <template if="{{injected != command}}">
         {{injected}} - <i>{{command}}</i>
       </template>
-    </div>
+    </paper-item>
   </template>
   <script>
     (function(){

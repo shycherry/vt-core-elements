@@ -1,3 +1,7 @@
+:host b{
+  display: inline-block;
+}
+
 :host #subTasks {
   margin-left: 1em;
 }

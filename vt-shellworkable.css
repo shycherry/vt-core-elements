@@ -5,6 +5,7 @@
 }
 
 :host([status="working"]){
+  background-color: rgba(255,140,0,0.1);
   -webkit-animation: working 1s infinite;
 }
 
@@ -15,12 +16,9 @@
 
 :host([status="enqueued"]){
   background-color: rgba(0,0,255,0.1);
+  -webkit-animation: working 1s infinite;
 }
 
 :host([status="finished"]){
   background-color: rgba(0,255,0,0.1);
-}
-
-:host {
-  display: block;
 }

@@ -1,16 +1,18 @@
 <link rel="import" href="./vt-shellworkable.html">
+<link rel="import" href="../paper-item/paper-item.html">
 
 <polymer-element name="vt-shellbatch" extends="vt-shellworkable" attributes="batchname">
   <template>
-    <div on-click="{{cycleStatus}}">
-      <link rel="stylesheet" href="vt-shellbatch.css"/>
+    <link rel="stylesheet" href="vt-shellbatch.css"/>
+    <paper-item raised>
+      <shadow id="parent"></shadow>
       <template if="{{'' != batchname}}">
         <b>{{batchname}}</b>
       </template>
       <div id="subTasks">
         <content id="subTasksContent" select="vt-shelltask, vt-shellbatch"></content>
       </div>
-    </div>
+    </paper-item>
   </template>
   <script>
     (function(){
