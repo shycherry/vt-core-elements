@@ -4,15 +4,15 @@
 <polymer-element name="vt-shellbatch" extends="vt-shellworkable" attributes="batchname">
   <template>
     <link rel="stylesheet" href="vt-shellbatch.css"/>
-    <paper-item raised>
-      <shadow id="parent"></shadow>
       <template if="{{'' != batchname}}">
-        <b>{{batchname}}</b>
+        <paper-item>
+          <shadow id="parent"></shadow>
+          <b>{{batchname}}</b>
+        </paper-item>
       </template>
       <div id="subTasks">
         <content id="subTasksContent" select="vt-shelltask, vt-shellbatch"></content>
       </div>
-    </paper-item>
   </template>
   <script>
     (function(){

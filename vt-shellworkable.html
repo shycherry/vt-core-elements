@@ -1,13 +1,11 @@
 <link rel="import" href="./vt-model-element.html">
-<link rel="import" href="../paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
 
-<!-- status : activated, deactivated, enqueued, working, canceled, finished -->
-<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status" status="activated">
+<!-- status : none, enqueued, working, canceled, finished -->
+<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated">
   <template>
     <link rel="stylesheet" href="vt-shellworkable.css"/>
-    <template if="{{status=='activated' || status=='deactivated'}}">
-      <paper-checkbox id="checkActiv"></paper-checkbox>
-    </template>
+    <paper-toggle-button checked="{{activated}}" id="checkActiv"></paper-toggle-button>
   </template>
   <script type="text/javascript" src="../underscore/underscore.js"></script>
   <script>
@@ -15,7 +13,10 @@
       var Async = global.require('async');
 
       Polymer('vt-shellworkable',{
-        status: "enqueued",
+        publish : {
+          activated : {value: true, reflect: true},
+        },
+        status: {value: 'none', reflect: true},
         shellworker : null,
         cycleStatus : function(ev){
           ev.stopPropagation();
@@ -25,7 +26,7 @@
             this.setAttribute('status', 'enqueued');
         },
         resetStatus : function(){
-          this.setAttribute('status', 'activated');
+          this.setAttribute('status', 'none');
         },
         bindWorker : function(){
         },

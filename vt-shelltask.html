@@ -4,7 +4,7 @@
 <polymer-element name="vt-shelltask" extends="vt-shellworkable" attributes="command">
   <template>
     <link rel="stylesheet" href="vt-shelltask.css"/>
-    <paper-item raised>
+    <paper-item>
       <shadow id="parent"></shadow>
       <template if="{{injected == command}}">
         {{command}}
