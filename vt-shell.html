@@ -1,6 +1,6 @@
 <link rel="import" href="./vt-model-element.html">
 <link rel="import" href="./vt-shellworker.html">
-<link rel="import" href="../shy-injecter/shy-injecter.html">
+<link rel="import" href="./vt-shellbatch.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-button/paper-button.html">
 
@@ -9,14 +9,13 @@
   <template>
     <link rel="stylesheet" href="vt-shell.css"/>
     <vt-shellworker id="worker"></vt-shellworker>
-    <shy-injecter id="injecter"></shy-injecter>
     <div id="shellContainer">
       <template if="{{output}}">
         <div id="viewport"></div>
       </template>
-      <div id="shelltasksContainer">
+      <vt-shellbatch batchname="batch" id="shellbatch" status="enqueued" params="{{params}}">
         <content id="content" select="vt-shelltask"></content>
-      </div>
+      </vt-shellbatch>
       <template if="{{commandline}}">
         <div id="inputbar">
           <paper-input id="commandInput" label="command"></paper-input>
@@ -27,7 +26,6 @@
   </template>
   <script type="text/javascript" src="../underscore/underscore.js"></script>
   <script>
-    var ChildProcess = global.require('child_process');
     var Async = global.require('async');
     var _StartTransactionMarker = 'echo V15TStart_';
     var _EndTransactionMarker = 'echo V15TEnd_';
@@ -39,62 +37,8 @@
       autostart: true,
       consumetasks: true,
       params: {'test' : 'yaw ! test is working !'},
-      shelltasks : [],
-      paramsChanged: function(){
-        var shelltasks = this.shelltasks;//this.$.shelltasksContainer.children;
-        var nbShelltasks = shelltasks.length;//this.$.shelltasksContainer.children.length;
-        for(var i = 0; i< nbShelltasks; i++){
-          this.injectParams(shelltasks[i]);
-        }
-      },
       created : function(){
-        this.queue = Async.queue(this.doShellTask.bind(this), 1);
-        this.queue.pause();
-        this.child_process = ChildProcess.spawn('cmd');
         this.fullOutput = '';
-        this.locTransactionId = 0;
-
-        var self = this;
-
-        var onCommandChanged = function(e){
-          console.log(e);
-          if(e && e.detail && e.detail.shelltask){
-             self.injectParams(e.detail.shelltask);
-          }
-        }
-
-        this.addEventListener('commandChanged', onCommandChanged);
-
-        var stdoutCallback = function(data){
-          self.fullOutput += data;
-          if(self.output){
-            self.$.viewport.innerHTML += self.encodeHTML(data);
-          }
-          self.fire('stdout_data', data);
-        };
-
-        var stderrCallback = function(data){
-          self.fullOutput += data;
-          if(self.output){
-            self.$.viewport.innerHTML += self.encodeHTML(data);
-          }
-          self.fire('stderr_data', data);
-        };
-        
-        this.child_process.stdout.on('data', stdoutCallback);
-        this.child_process.stderr.on('data', stderrCallback);
-        this.child_process.on('exit', function(){console.log('child_process exited')});
-      },
-      injectParams : function(iShellTaskElt){
-        if(iShellTaskElt){
-          var injecter = this.$.injecter;
-          var command = iShellTaskElt.command;
-          if(injecter && command){
-            injecter.input = command;
-            injecter.params = this.params;
-          }
-          iShellTaskElt.injected = injecter.getInjected();
-        }
       },
       encodeHTML : function(iText){
         if(! iText){
@@ -111,102 +55,35 @@
           return '';
         }
       },
-      rawWrite : function(iData){
-        this.child_process.stdin.write(iData);
-      },
-      write : function(iData){
-        this.rawWrite(iData);
-      },
-      doShellTask : function(iShellTaskElt, iCallback){
-        var self = this;
-        var transactionId = _TransactionMarker+this.locTransactionId;
-        
-        if(iShellTaskElt.status === 'canceled'){
-          iShellTaskElt.setAttribute("status", "dropped");
-          
-          if(self.consumetasks == true)
-            iShellTaskElt.remove();
-          
-          if(iCallback) iCallback();
-          return;
-        }
-
-        iShellTaskElt.setAttribute("status", "working");
-        this.write(_StartTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
-        var command = iShellTaskElt.injected || iShellTaskElt.command;
-        this.write( (command ? command : '') + '\n');
-        this.write(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId+'\n');
-
-        var dataBuffer='';
-
-        var dataCallback = function(customEvent){
-          var stringData = customEvent.detail.toString();
-          dataBuffer += stringData;
-          if(RegExp(_EndTransactionMarker+iShellTaskElt.elt_id+transactionId).test(stringData)){
-            iShellTaskElt.setAttribute('status','finished');
-            
-            if(self.consumetasks == true)
-              iShellTaskElt.remove();
-            
-            self.removeEventListener('stdout_data', stdoutCallback);
-            self.removeEventListener('stderr_data', stderrCallback);
-            self.locTransactionId++;
-            
-            if(iShellTaskElt.completeCallback){
-              iShellTaskElt.completeCallback(null, dataBuffer);
-            }
-
-            if(iCallback){
-              iCallback(null, dataBuffer);
-            }
-          }
-        };
-
-        var stdoutCallback = function(customEvent){          
-          dataCallback(customEvent);
-          if(iShellTaskElt.stdoutCallback){
-            iShellTaskElt.stdoutCallback(customEvent);
-          }
-        };
-
-        var stderrCallback = function(customEvent){
-          dataCallback(customEvent);
-          if(iShellTaskElt.stdoutCallback){
-            iShellTaskElt.stdoutCallback(customEvent);
-          }
-        };
-
-        this.addEventListener('stdout_data', stdoutCallback);
-        this.addEventListener('stderr_data', stderrCallback);
-      },
       domReady : function(){
-        var usershelltasks = this.$.content.getDistributedNodes();
-        for(var i in usershelltasks){
-          this.addShellTaskElt(usershelltasks[i])
-        }
+        var stdoutCallback = function(ev){
+          this.fullOutput += ev.detail;
+          if(this.output){
+            this.$.viewport.innerHTML += this.encodeHTML(ev.detail);
+          }
+          this.fire('stdout_data', ev);
+        }.bind(this);
+
+        var stderrCallback = function(ev){
+          this.fullOutput += ev.detail;
+          if(this.output){
+            this.$.viewport.innerHTML += this.encodeHTML(ev.detail);
+          }
+          this.fire('stderr_data', ev);
+        }.bind(this);
+        
+        this.$.worker.addEventListener('stdout_data', stdoutCallback);
+        this.$.worker.addEventListener('stderr_data', stderrCallback);
+
         if(this.autostart == true)
-          this.queue.resume();
-      },
-      enqueueShellTasks : function(){
-        var shelltasks = this.shelltasks;//this.$.shelltasksContainer.children;
-        var nbShelltasks = shelltasks.length; //this.$.shelltasksContainer.children.length;
-        for(var i = 0; i< nbShelltasks; i++){
-          this.addShellTaskElt(shelltasks[i])
-        }
+          this.start();
       },
       addShellTaskElt : function(iShellTaskElt){
         if(!iShellTaskElt || !iShellTaskElt.command)
           return;
 
         iShellTaskElt.setAttribute("status", "enqueued");
-        iShellTaskElt.setWorker(this.$.worker);
-        
-        // if( iShellTaskElt.parentNode != this.$.shelltasksContainer)
-        //   this.$.shelltasksContainer.appendChild(iShellTaskElt);
-
-        this.shelltasks.push(iShellTaskElt);
-        
-        this.queue.push(iShellTaskElt);
+        this.$.shellbatch.appendChild(iShellTaskElt);
       },
       addTaskData : function(iTask){
         var newTaskElt = document.createElement('vt-shelltask');        
@@ -220,12 +97,11 @@
           return;
         
         this.addTaskData({ command: userCmd });
+        this.start();
       },
       start : function(){
-        if(this.queue.idle())
-          this.enqueueShellTasks();
-        
-        this.queue.resume();
+        this.$.shellbatch.status = 'enqueued';
+        this.$.shellbatch.doTask(this.$.worker);
       }
     });
   </script>

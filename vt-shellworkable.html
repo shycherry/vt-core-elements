@@ -2,7 +2,7 @@
 <link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
 
 <!-- status : none, enqueued, working, canceled, finished -->
-<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated">
+<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated params">
   <template>
     <link rel="stylesheet" href="vt-shellworkable.css"/>
     <paper-toggle-button checked="{{activated}}" id="checkActiv"></paper-toggle-button>
@@ -15,71 +15,14 @@
       Polymer('vt-shellworkable',{
         publish : {
           activated : {value: true, reflect: true},
+          status: {value: 'none', reflect: true}
         },
-        status: {value: 'none', reflect: true},
-        shellworker : null,
-        cycleStatus : function(ev){
-          ev.stopPropagation();
-          if(this.status == 'enqueued')
-            this.setAttribute('status', 'canceled');
-          else if(this.status == 'canceled')
-            this.setAttribute('status', 'enqueued');
-        },
+        params: {'test' : 'shellworkable'},
         resetStatus : function(){
-          this.setAttribute('status', 'none');
+          this.status = 'none';
         },
-        bindWorker : function(){
-        },
-        unbindWorker : function(){
-        },
-        setWorker : function(iShellWorker){
-          this.unbindWorker();
-          this.shellworker = iShellWorker;
-          this.bindWorker();
-        },
-        doTask : function(iCallback){
+        doTask : function(iWorker, iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
-          this.workOnTask(this.task.bind(this), iCallback);
-        },
-        workOnTask : function(iTask, iCallback){
-          iCallback = (iCallback) ? iCallback : _.noop;
-          var shellworker = this.shellworker;
-          
-          if(!shellworker || !iTask){
-            iCallback();
-            return;
-          }
-
-          if(this.status != 'enqueued'){
-            iCallback();
-            return;
-          }
-
-          var thisStdoutCallback = function(customEvent){
-            if(this.stdoutCallback){
-              this.stdoutCallback(customEvent);
-            }
-          }.bind(this);
-
-          var thisStderrCallback = function(customEvent){
-            if(this.stderrCallback){
-              this.stderrCallback(customEvent);
-            }
-          }.bind(this);
-          
-          var thisFinishedCallback = function(err, result){
-            this.setAttribute('status', 'finished');
-            if(this.completeCallback){
-              this.completeCallback(err, result);
-            }
-            shellworker.removeEventListener('stdout_data', thisStdoutCallback);
-            shellworker.removeEventListener('stderr_data', thisStderrCallback);
-            iCallback(err, result);
-          }.bind(this);
-
-          this.setAttribute('status', 'working');
-
-          iTask(thisFinishedCallback);
         }
       });
     })();

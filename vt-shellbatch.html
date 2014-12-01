@@ -20,36 +20,50 @@
       
       Polymer('vt-shellbatch',{
         batchname : '',
-        bindWorker : function(){
-          this.super();
-        },
-        unbindWorker : function(){
-          this.super();
-        },
-        setWorker : function(iShellWorker){
-          this.super(arguments);
-          var subWorkableNodes = this.$.subTasksContent.getDistributedNodes();
-          for (var i = 0; i < subWorkableNodes.length; i++) {
-            subWorkableNodes[i].setWorker(iShellWorker);
+        paramsChanged : function(){
+          var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subTasksNodes.length; i++) {
+            subTasksNodes[i].params = this.params;
           }
         },
-        task : function(iCallback){
-          iCallback = (iCallback)? iCallback : _.noop;
+        activatedChanged : function(){
+          var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subTasksNodes.length; i++) {
+            subTasksNodes[i].activated = this.activated;
+          }
+        },
+        statusChanged : function(){
+          if(this.status == 'working')
+            return;
 
+          var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subTasksNodes.length; i++) {
+            subTasksNodes[i].status = this.status;
+          }
+        },
+        doTask : function(iWorker, iCallback){
+          iCallback = (iCallback)? iCallback : _.noop;
+          console.log('doShellBatch : ' + this.batchname);
           var tasks = [];
           var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
           for (var i = 0; i < subTasksNodes.length; i++) {
             var currentTaskNode = subTasksNodes[i];
-            tasks.push(currentTaskNode.doTask.bind(currentTaskNode));
+            tasks.push(currentTaskNode.doTask.bind(currentTaskNode, iWorker));
           }
 
           var thisFinishCallback = function(err, results){
+            console.log('finishShellBatch : ' + this.batchname);
+            this.status = 'finished';
             results = _.flatten(results);
             results = _.compact(results);
-
-            iCallback(err, results.join());
+            results = results.join();
+            if(this.completeCallback){
+              this.completeCallback(err, results);
+            }
+            iCallback(err, results);
           }.bind(this);
 
+          this.status = 'working';
           Async.series(tasks, thisFinishCallback);
         }
       });
