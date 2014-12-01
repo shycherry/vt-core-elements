@@ -1,0 +1,30 @@
+<link rel="import" href="./vt-model-element.html">
+<link rel="import" href="./vt-shellbatch.html">
+<link rel="import" href="./vt-shellworker.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+
+<polymer-element name="vt-buttonbatch" extends="vt-model-element" attributes="buttonlabel params">
+  <template>
+    <link rel="stylesheet" href="vt-buttonbatch.css"/>
+    <vt-shellworker id="worker"></vt-shellworker>
+    <paper-button id="button" on-click="{{myclick}}" raised>{{buttonlabel}}</paper-button>
+    <paper-progress id="progress" value="10"></paper-progress>
+    <vt-shellbatch id="batch" params="{{params}}" status="enqueued">
+      <content></content>
+    </vt-shellbatch>
+  </template>
+  <script>
+    (function(){
+      Polymer('vt-buttonbatch',{
+        myclick : function(){
+          var thisFinishedCallback = function(err, result){
+            this.$.button.disabled = false;
+          }.bind(this);
+          this.$.batch.doTask(this.$.worker, thisFinishedCallback);
+          this.$.button.disabled = true;
+        }
+      });
+    })();
+  </script>
+</polymer-element>
