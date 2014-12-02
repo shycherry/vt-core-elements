@@ -1,27 +1,65 @@
 <link rel="import" href="./vt-model-element.html">
 <link rel="import" href="./vt-shellbatch.html">
+<link rel="import" href="./vt-shelltask.html">
 <link rel="import" href="./vt-shellworker.html">
 <link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../paper-shadow/paper-shadow.html">
 
-<polymer-element name="vt-buttonbatch" extends="vt-model-element" attributes="buttonlabel params">
+<polymer-element name="vt-buttonbatch" extends="vt-model-element" attributes="buttonlabel params details">
   <template>
     <link rel="stylesheet" href="vt-buttonbatch.css"/>
     <vt-shellworker id="worker"></vt-shellworker>
-    <paper-button id="button" on-click="{{myclick}}" raised>{{buttonlabel}}</paper-button>
-    <paper-progress id="progress" value="10"></paper-progress>
-    <vt-shellbatch id="batch" params="{{params}}" status="enqueued">
-      <content></content>
-    </vt-shellbatch>
+    <paper-shadow z="1">
+      <div horizontal layout>
+        <paper-icon-button on-click="{{detailsClick}}" icon="menu" title="details" role="button"></paper-icon-button>
+        <paper-button id="button" on-click="{{click}}" raised flex>{{buttonlabel}}</paper-button>
+      </div>
+      <div horizontal layout>
+        <paper-progress id="progress" value="{{$.runbatch.progress}}" flex></paper-progress>
+      </div>
+      <div id="details">
+        <vt-shellbatch batchname="Edit" params="{{params}}">
+          <content id="subTasksContent" select="vt-shelltask, vt-shellbatch"></content>
+        </vt-shellbatch>
+        <vt-shellbatch batchname="RunBatch" id="runbatch"></vt-shellbatch>
+      </div>
+    </paper-shadow>
   </template>
   <script>
     (function(){
+      
+      var cloneContentToRunBatch = function(){
+        var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+        for (var i = 0; i < subTasksNodes.length; i++) {
+          var clonedNode = subTasksNodes[i].cloneNode(true);
+          this.$.runbatch.appendChild(clonedNode);
+          clonedNode.params = this.params ? this.params : {};
+        }
+      };
+
       Polymer('vt-buttonbatch',{
-        myclick : function(){
+        publish : {
+          details : {value : false, reflect : true}
+        },
+        detailsClick : function(){
+          this.details = !this.details;
+        },
+        click : function(){
+          while(this.$.runbatch.firstChild){
+            this.$.runbatch.removeChild(this.$.runbatch.firstChild);
+          }
+          cloneContentToRunBatch.call(this);
+          this.$.runbatch.status = 'enqueued';
+          this.async(this.go);
+        },
+        go : function(){
           var thisFinishedCallback = function(err, result){
             this.$.button.disabled = false;
           }.bind(this);
-          this.$.batch.doTask(this.$.worker, thisFinishedCallback);
+
+          this.$.runbatch.doTask(this.$.worker, thisFinishedCallback);
           this.$.button.disabled = true;
         }
       });

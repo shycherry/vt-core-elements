@@ -1,7 +1,7 @@
 <link rel="import" href="./vt-shellworkable.html">
 <link rel="import" href="../paper-item/paper-item.html">
 
-<polymer-element name="vt-shellbatch" extends="vt-shellworkable" attributes="batchname">
+<polymer-element name="vt-shellbatch" extends="vt-shellworkable" attributes="batchname progress">
   <template>
     <link rel="stylesheet" href="vt-shellbatch.css"/>
       <template if="{{'' != batchname}}">
@@ -20,6 +20,7 @@
       
       Polymer('vt-shellbatch',{
         batchname : '',
+        progress : 0,
         paramsChanged : function(){
           var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
           for (var i = 0; i < subTasksNodes.length; i++) {
@@ -54,9 +55,11 @@
           var thisFinishCallback = function(err, results){
             console.log('finishShellBatch : ' + this.batchname);
             this.status = 'finished';
+            this.progress = 100;
             results = _.flatten(results);
             results = _.compact(results);
             results = results.join();
+            this.fire('task_finished', {'src' : this, 'data' : results});
             if(this.completeCallback){
               this.completeCallback(err, results);
             }
@@ -64,6 +67,7 @@
           }.bind(this);
 
           this.status = 'working';
+          this.progress = 0;
           Async.series(tasks, thisFinishCallback);
         }
       });

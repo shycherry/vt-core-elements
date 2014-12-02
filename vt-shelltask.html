@@ -63,6 +63,7 @@
           var thisFinishedCallback = function(err, result){
             console.log('finishShellTask : ' + this.command);
             this.status = 'finished';
+            this.fire('task_finished', {'src': this, 'data':result});
             if(this.completeCallback){
               this.completeCallback(err, result);
             }
@@ -72,6 +73,8 @@
           }.bind(this);
 
           this.status = 'working';
+          shellworker.addEventListener('stdout_data', thisStdoutCallback);
+          shellworker.addEventListener('stderr_data', thisStderrCallback);
           shellworker.doShellTask(this, thisFinishedCallback);
         }
       });

@@ -2,7 +2,7 @@
 <link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
 
 <!-- status : none, enqueued, working, canceled, finished -->
-<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated params">
+<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated params completeCallback">
   <template>
     <link rel="stylesheet" href="vt-shellworkable.css"/>
     <paper-toggle-button checked="{{activated}}" id="checkActiv"></paper-toggle-button>
@@ -17,6 +17,7 @@
           activated : {value: true, reflect: true},
           status: {value: 'none', reflect: true}
         },
+        completeCallback : null,
         params: {'test' : 'shellworkable'},
         resetStatus : function(){
           this.status = 'none';
