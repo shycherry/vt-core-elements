@@ -1,5 +1,6 @@
 <link rel="import" href="./vt-shellworkable.html">
 <link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../shy-injecter/shy-injecter.html">
 
 <polymer-element name="vt-shelltask" extends="vt-shellworkable" attributes="command">
@@ -8,11 +9,16 @@
     <shy-injecter id="injecter"></shy-injecter>
     <paper-item>
       <shadow id="parent"></shadow>
-      <template if="{{injected == command}}">
-        {{command}}
+      <template if="{{status != 'edit'}}">
+        <template if="{{injected == command}}">
+          {{command}}
+        </template>
+        <template if="{{injected != command}}">
+          {{injected}} - <i>{{command}}</i>
+        </template>
       </template>
-      <template if="{{injected != command}}">
-        {{injected}} - <i>{{command}}</i>
+      <template if="{{status == 'edit'}}">
+        <paper-input floatingLabel label="{{injected}}" value="{{command}}"></paper-input>
       </template>
     </paper-item>
   </template>
