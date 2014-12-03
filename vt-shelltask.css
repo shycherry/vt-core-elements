@@ -2,7 +2,7 @@
   display: block;
 }
 
-:host paper-item {
-  overflow: auto;
-  overflow-wrap: break-word;
+:host #taskview{
+  overflow: hidden;
+  -webkit-user-select: text;
 }

@@ -12,11 +12,11 @@
     <link rel="stylesheet" href="vt-buttonbatch.css"/>
     <vt-shellworker id="worker"></vt-shellworker>
     <paper-shadow z="1">
-      <div horizontal layout>
+      <div horizontal layout center>
         <paper-icon-button on-click="{{detailsClick}}" icon="menu" title="details" role="button"></paper-icon-button>
         <paper-button id="button" on-click="{{click}}" raised flex>{{buttonlabel}}</paper-button>
       </div>
-      <div horizontal layout>
+      <div horizontal layout center>
         <paper-progress id="progress" value="{{$.runbatch.progress}}" flex></paper-progress>
       </div>
       <div id="details">
@@ -45,9 +45,6 @@
       Polymer('vt-buttonbatch',{
         publish : {
           details : {value : false, reflect : true}
-        },
-        paramsChanged : function(){
-          this.$.edit.params = this.params;
         },
         detailsClick : function(){
           this.details = !this.details;

@@ -4,5 +4,4 @@
 
 :host(:not([details])) #details{
   display: none;
-  color: red;
 }
