@@ -10,11 +10,11 @@
     <paper-item>
       <shadow id="parent"></shadow>
       <template if="{{status != 'edit'}}">
-        <template if="{{injected == command}}">
-          {{command}}
+        <template if="{{injected != ''}}">
+          {{injected}}
         </template>
-        <template if="{{injected != command}}">
-          {{injected}} - <i>{{command}}</i>
+        <template if="{{injected == ''}}">
+          <i>{{command}}</i>
         </template>
       </template>
       <template if="{{status == 'edit'}}">
@@ -43,7 +43,7 @@
           iCallback = (iCallback)? iCallback : _.noop;
           console.log('doShellTask : ' + this.command);
           var shellworker = iWorker;
-          
+
           if(!shellworker){
             iCallback('no worker');
             return;
@@ -65,7 +65,7 @@
               this.stderrCallback(customEvent);
             }
           }.bind(this);
-          
+
           var thisFinishedCallback = function(err, result){
             console.log('finishShellTask : ' + this.command);
             this.status = 'finished';
