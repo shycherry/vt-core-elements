@@ -17,10 +17,26 @@
   <script>
     (function(){
       var Async = global.require('async');
-      
+
       Polymer('vt-shellbatch',{
         batchname : '',
         progress : 0,
+        ready : function(){
+          this.onMutation(this, this.childrenUpdated);
+        },
+        childrenUpdated : function(mutations){
+          this.updateChildren();
+          this.onMutation(this, this.childrenUpdated);
+        },
+        updateChildren : function(){
+          var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subTasksNodes.length; i++) {
+            var currentTask = subTasksNodes[i];
+            currentTask.params = (currentTask.params == {})? this.params : currentTask.params;
+            currentTask.activated = this.activated;
+            currentTask.status = (this.status == 'working')? currentTask.status : this.status;
+          }
+        },
         paramsChanged : function(){
           var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
           for (var i = 0; i < subTasksNodes.length; i++) {

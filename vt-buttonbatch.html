@@ -29,7 +29,7 @@
   </template>
   <script>
     (function(){
-      
+
       var cloneContentToRunBatch = function(){
         var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
         for (var i = 0; i < subTasksNodes.length; i++) {
@@ -45,6 +45,9 @@
       Polymer('vt-buttonbatch',{
         publish : {
           details : {value : false, reflect : true}
+        },
+        paramsChanged : function(){
+          this.$.edit.params = this.params;
         },
         detailsClick : function(){
           this.details = !this.details;

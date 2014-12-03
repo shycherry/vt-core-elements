@@ -25,7 +25,12 @@
   <script>
     (function(){
       Polymer('vt-shelltask',{
-        command : "ls",
+        publish: {
+          command : {
+            value : "ls",
+            reflect : true
+          }
+        },
         injected : "",
         observe: {
           command : 'reinjectParams',
