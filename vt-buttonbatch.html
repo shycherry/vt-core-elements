@@ -11,7 +11,7 @@
   <template>
     <link rel="stylesheet" href="vt-buttonbatch.css"/>
     <vt-shellworker id="worker"></vt-shellworker>
-    <paper-shadow z="1">
+    <paper-shadow id="shadow" z="1" animated>
       <div horizontal layout center>
         <paper-icon-button on-click="{{detailsClick}}" icon="menu" title="details" role="button"></paper-icon-button>
         <paper-button id="button" on-click="{{click}}" raised flex>{{buttonlabel}}</paper-button>
@@ -48,6 +48,7 @@
         },
         detailsClick : function(){
           this.details = !this.details;
+          this.$.shadow.setZ ( (this.$.shadow.z == 1)? 2 : 1) ;
         },
         click : function(){
           while(this.$.runbatch.firstChild){
