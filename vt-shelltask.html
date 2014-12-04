@@ -76,9 +76,6 @@
             console.log('finishShellTask : ' + this.command);
             this.status = 'finished';
             this.fire('task_finished', {'src': this, 'data':result});
-            if(this.completeCallback){
-              this.completeCallback(err, result);
-            }
             shellworker.removeEventListener('stdout_data', thisStdoutCallback);
             shellworker.removeEventListener('stderr_data', thisStderrCallback);
             iCallback(err, result);

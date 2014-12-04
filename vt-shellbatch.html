@@ -75,9 +75,6 @@
             results = _.compact(results);
             results = results.join();
             this.fire('task_finished', {'src' : this, 'data' : results});
-            if(this.completeCallback){
-              this.completeCallback(err, results);
-            }
             iCallback(err, results);
           }.bind(this);
 

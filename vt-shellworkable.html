@@ -2,7 +2,7 @@
 <link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
 
 <!-- status : none, edit, enqueued, working, canceled, finished -->
-<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated params completeCallback">
+<polymer-element name="vt-shellworkable" extends="vt-model-element" attributes="status activated params">
   <template>
     <link rel="stylesheet" href="vt-shellworkable.css"/>
     <template if="{{status == 'edit'}}">
@@ -19,7 +19,6 @@
           activated : {value: true, reflect: true},
           status: {value: 'none', reflect: true}
         },
-        completeCallback : null,
         params: {},
         doTask : function(iWorker, iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
