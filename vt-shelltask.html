@@ -33,6 +33,7 @@
           }
         },
         injected : "",
+        hasErrors : false,
         observe: {
           command : 'reinjectParams',
           params : 'reinjectParams'
@@ -67,6 +68,8 @@
           }.bind(this);
 
           var thisStderrCallback = function(customEvent){
+            console.log("mwaich" + customEvent.toString());
+            this.hasErrors = true;
             if(this.stderrCallback){
               this.stderrCallback(customEvent);
             }
@@ -74,7 +77,7 @@
 
           var thisFinishedCallback = function(err, result){
             console.log('finishShellTask : ' + this.command);
-            this.status = 'finished';
+            this.status = (this.hasErrors)? 'error' : 'finished';
             this.fire('task_finished', {'src': this, 'data':result});
             shellworker.removeEventListener('stdout_data', thisStdoutCallback);
             shellworker.removeEventListener('stderr_data', thisStderrCallback);
@@ -82,6 +85,7 @@
           }.bind(this);
 
           this.status = 'working';
+          this.hasErrors = false;
           shellworker.addEventListener('stdout_data', thisStdoutCallback);
           shellworker.addEventListener('stderr_data', thisStderrCallback);
           shellworker.doShellTask(this, thisFinishedCallback);
