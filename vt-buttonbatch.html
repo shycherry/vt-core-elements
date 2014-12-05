@@ -7,14 +7,16 @@
 <link rel="import" href="../paper-progress/paper-progress.html">
 <link rel="import" href="../paper-shadow/paper-shadow.html">
 
-<polymer-element name="vt-buttonbatch" extends="vt-model-element" attributes="buttonlabel params details">
+<polymer-element name="vt-buttonbatch" extends="vt-shellworkable" attributes="buttonlabel params details">
   <template>
+    <shadow></shadow>
     <link rel="stylesheet" href="vt-buttonbatch.css"/>
+    <shy-injecter id="injecter"></shy-injecter>
     <vt-shellworker id="worker"></vt-shellworker>
     <paper-shadow id="shadow" z="1" animated>
       <div horizontal layout center>
         <paper-icon-button on-click="{{detailsClick}}" icon="menu" title="details" role="button"></paper-icon-button>
-        <paper-button id="button" on-click="{{click}}" raised flex>{{buttonlabel}}</paper-button>
+        <paper-button id="button" on-click="{{click}}" raised flex>{{injectedlabel}}</paper-button>
       </div>
       <div horizontal layout center>
         <paper-progress id="progress" value="{{$.runbatch.progress}}" flex></paper-progress>
@@ -23,7 +25,7 @@
         <vt-shellbatch status="edit" params="{{params}}">
           <content id="subTasksContent" select="vt-shelltask, vt-shellbatch"></content>
         </vt-shellbatch>
-        <vt-shellbatch id="runbatch"></vt-shellbatch>
+        <vt-shellbatch id="runbatch" status="{{status}}"></vt-shellbatch>
       </div>
     </paper-shadow>
   </template>
@@ -46,26 +48,39 @@
         publish : {
           details : {value : false, reflect : true}
         },
+        observe: {
+          buttonlabel : 'reinjectParams',
+          params : 'reinjectParams'
+        },
+        reinjectParams : function(){
+          this.$.injecter.input = this.buttonlabel;
+          this.$.injecter.params = this.params;
+          this.injectedlabel = this.$.injecter.getInjected();
+        },
         detailsClick : function(){
           this.details = !this.details;
           this.$.shadow.setZ ( (this.$.shadow.z == 1)? 2 : 1) ;
         },
         click : function(){
-          this.fire('go', {'src':this});
+          this.fire('click', {'src':this});
           while(this.$.runbatch.firstChild){
             this.$.runbatch.removeChild(this.$.runbatch.firstChild);
           }
           cloneContentToRunBatch.call(this);
           this.$.runbatch.status = 'enqueued';
-          this.async(this.go);
+          this.async(this.doTask);
         },
-        go : function(){
+        doTask : function(iWorker, iCallback){
+          iCallback = (iCallback)? iCallback : _.noop;
+          iWorker = (iWorker)? iWorker : this.$.worker;
+
           var thisFinishedCallback = function(err, result){
             this.$.button.disabled = false;
+            iCallback(err, result);
           }.bind(this);
 
-          this.$.runbatch.doTask(this.$.worker, thisFinishedCallback);
           this.$.button.disabled = true;
+          this.$.runbatch.doTask(iWorker, thisFinishedCallback);
         }
       });
     })();
