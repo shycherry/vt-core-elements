@@ -51,6 +51,7 @@
           this.$.shadow.setZ ( (this.$.shadow.z == 1)? 2 : 1) ;
         },
         click : function(){
+          this.fire('go', {'src':this});
           while(this.$.runbatch.firstChild){
             this.$.runbatch.removeChild(this.$.runbatch.firstChild);
           }
