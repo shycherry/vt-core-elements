@@ -19,6 +19,8 @@
     "paper-button": "Polymer/paper-button#^0.5.0",
     "underscore": "latest",
     "shy-injecter": "shycherry/shy-injecter#latest",
-    "vt-dnd-list": "shycherry/vt-dnd-list#latest"
+    "vt-dnd-list": "shycherry/vt-dnd-list#latest",
+    "vt-toolbar": "shycherry/vt-toolbar#latest",
+    "vt-toolbar-item": "shycherry/vt-toolbar#latest"
   }
 }
