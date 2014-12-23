@@ -1,8 +1,8 @@
 :host {
   display: block;
+  overflow: hidden;
 }
 
-.innerTool {
+:host #innerTool {
   overflow: auto !important;
-  position: relative !important;
 }
