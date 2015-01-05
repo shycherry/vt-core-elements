@@ -5,7 +5,7 @@
   <template>
     <link rel="stylesheet" href="vt-tool.css"/>
     <paper-shadow animated z="1" id="shadowTool">
-      <div id="innerTool">
+      <div id="innerTool" style="background : {{tool.color || 'initial'}}">
         <content id="content"></content>
       </div>
     </paper-shadow>
@@ -13,6 +13,7 @@
   <script>
     Polymer('vt-tool',{
       margin : 10,
+      tool : {},
       ready : function(){
         this.startRelayout = this.startRelayout.bind(this);
       },
