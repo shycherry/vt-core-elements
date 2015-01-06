@@ -46,7 +46,6 @@
         },
         doTask : function(iWorker, iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
-          console.log('doShellTask : ' + this.command);
           var shellworker = iWorker;
 
           if(!shellworker){
@@ -66,7 +65,6 @@
           }.bind(this);
 
           var thisStderrCallback = function(customEvent){
-            console.log("mwaich" + customEvent.toString());
             this.hasErrors = true;
             if(this.stderrCallback){
               this.stderrCallback(customEvent);
@@ -74,7 +72,6 @@
           }.bind(this);
 
           var thisFinishedCallback = function(err, result){
-            console.log('finishShellTask : ' + this.command);
             this.status = (this.hasErrors)? 'error' : 'finished';
             this.fire('task_finished', {'src': this, 'data':result});
             shellworker.removeEventListener('stdout_data', thisStdoutCallback);

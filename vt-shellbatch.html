@@ -72,6 +72,7 @@
 
           var thisFinishCallback = function(err, results){
             console.log('finishShellBatch : ' + this.batchname);
+            this.removeEventListener('task_finished', thisMakeProgress);
             this.status = 'finished';
             this.progress = 100;
             results = _.flatten(results);
@@ -83,6 +84,16 @@
 
           this.status = 'working';
           this.progress = 0;
+          var nbTasksDone = 0;
+
+          var thisMakeProgress = function(ev){
+            ev.stopPropagation();
+            nbTasksDone++;
+            this.progress = (nbTasksDone*100)/tasks.length;
+          }.bind(this);
+
+          this.addEventListener('task_finished', thisMakeProgress);
+
           Async.series(tasks, thisFinishCallback);
         }
       });
