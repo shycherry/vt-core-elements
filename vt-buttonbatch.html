@@ -21,7 +21,7 @@
         <paper-progress id="progress" value="{{$.runbatch.progress}}" flex></paper-progress>
       </div>
       <div id="details">
-        <vt-shellbatch status="edit" params="{{params}}">
+        <vt-shellbatch batchname="{{injectedlabel}}" status="edit" params="{{params}}">
           <content id="subTasksContent" select="vt-shelltask, vt-shellbatch"></content>
         </vt-shellbatch>
         <vt-shellbatch id="runbatch" status="{{status}}"></vt-shellbatch>
