@@ -22,8 +22,7 @@
   -webkit-animation: working 1s infinite;
 }
 
-:host([details]) #progress
-{
+:host([details]) #progress{
   display: none;
 }
 

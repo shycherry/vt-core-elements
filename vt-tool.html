@@ -20,13 +20,11 @@
       attached : function(){
         this.toolParent = this.parentNode;
         this.toolParent.addEventListener('relayout', this.startRelayout);
-        this.toolParent.addEventListener('relayoutBis', this.startRelayout);
         this.addEventListener('mouseover', this.addFocus);
         this.addEventListener('mouseout', this.removeFocus);
       },
       detached : function(){
         this.toolParent.removeEventListener('relayout', this.startRelayout);
-        this.toolParent.removeEventListener('relayoutBis', this.startRelayout);
         this.removeEventListener('mouseover', this.addFocus);
         this.removeEventListener('mouseout', this.removeFocus);
       },
