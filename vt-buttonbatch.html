@@ -7,7 +7,7 @@
 <link rel="import" href="../paper-progress/paper-progress.html">
 <link rel="import" href="../paper-shadow/paper-shadow.html">
 
-<polymer-element name="vt-buttonbatch" extends="vt-shellworkable" attributes="buttonlabel params details">
+<polymer-element name="vt-buttonbatch" extends="vt-shellworkable" attributes="buttonlabel params details autoclear">
   <template>
     <shadow></shadow>
     <link rel="stylesheet" href="vt-buttonbatch.css"/>
@@ -33,17 +33,26 @@
 
       var cloneContentToRunBatch = function(){
         var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+        this._autoDesactiveEditables = {};
         for (var i = 0; i < subTasksNodes.length; i++) {
           var currentNode = subTasksNodes[i];
           if(currentNode.activated){
             var clonedNode = currentNode.cloneNode(true);
             this.$.runbatch.appendChild(clonedNode);
             clonedNode.params = this.params ? this.params : {};
+
+            if(null != currentNode.autodesactive){
+              this._autoDesactiveEditables[currentNode.id] = currentNode;
+            }
+
           }
         }
       };
 
       Polymer('vt-buttonbatch',{
+        _worker : null,
+        _autoDesactiveEditables : {},
+        _finishedCallbacks : {},
         publish : {
           details : {value : false, reflect : true}
         },
@@ -51,34 +60,120 @@
           buttonlabel : 'reinjectParams',
           params : 'reinjectParams'
         },
+        ready : function(){
+          this.onMutation(this, this.childrenUpdated);
+        },
+        childrenUpdated : function(mutations){
+          this.updateChildren();
+          this.onMutation(this, this.childrenUpdated);
+        },
+        updateChildren : function(){
+          var subTasksNodes = this.$.subTasksContent.getDistributedNodes();
+          for (var i = 0; i < subTasksNodes.length; i++) {
+            var currentTask = subTasksNodes[i];
+            currentTask.status = "edit";
+          }
+        },
         reinjectParams : function(){
           this.$.injecter.input = this.buttonlabel;
           this.$.injecter.params = this.params;
           this.injectedlabel = this.$.injecter.getInjected();
+          if(null != this.activewhenresolvable){
+            if(this.$.injecter.isResolvable())
+              this.enable();
+            else
+              this.disable();
+          }
+          if(null != this.autostartwhenresolvable){
+            if(this.$.injecter.isResolvable()){
+              this.async(this.click.bind(this));
+            }
+          }
+          if(null != this.autoclear){
+            while(this.$.runbatch.firstChild){
+              this.$.runbatch.removeChild(this.$.runbatch.firstChild);
+            }
+          }
         },
         detailsClick : function(){
           this.details = !this.details;
           this.$.shadow.setZ ( (this.$.shadow.z == 1)? 2 : 1) ;
         },
+        setTaskFinishedCallback : function(id, cb){
+          this._finishedCallbacks[id] = cb;
+        },
+        unsetTaskFinishedCallback : function(id){
+          delete this._finishedCallbacks[id];
+        },
+        removeTaskFinishedListener : function(id, cb){
+          this._finishedCallbacks[id] = cb;
+        },
+        setWorker : function(iWorker){
+          this._worker = iWorker;
+        },
+        getWorker : function(){
+          return this._worker || this.$.worker;
+        },
+        disable : function(){
+          this.$.button.disabled = true;
+        },
+        enable : function(){
+          this.$.button.disabled = false;
+        },
         click : function(){
-          this.fire('click', {'src':this});
+          this.fire('batch_started', {'src':this});
           while(this.$.runbatch.firstChild){
             this.$.runbatch.removeChild(this.$.runbatch.firstChild);
           }
           cloneContentToRunBatch.call(this);
           this.$.runbatch.status = 'enqueued';
-          this.async(this.doTask);
+          this.async(this.doTask.bind(this, this._worker));
         },
         doTask : function(iWorker, iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
-          iWorker = (iWorker)? iWorker : this.$.worker;
+          iWorker = (iWorker)? iWorker : this.getWorker();
 
           var thisFinishedCallback = function(err, result){
-            this.$.button.disabled = false;
+            if(null != this.activewhenresolvable && this.$.injecter.isResolvable()){
+              this.enable();
+            }
+
+            if(null == this.autodesactive){
+              this.enable();
+            }
+
+            this.$.runbatch.removeEventListener("task_finished", thisAutodeactivateTaskListener);
+            this.$.runbatch.removeEventListener("task_finished", thisSubtaskFinishedListener);
             iCallback(err, result);
           }.bind(this);
 
-          this.$.button.disabled = true;
+          var thisAutodeactivateTaskListener = function(ev){
+            if(!ev.detail.src || !ev.detail.src.id)
+              return;
+            var sourceId = ev.detail.src.id;
+
+            var foundElt = this._autoDesactiveEditables[sourceId];
+
+            if(foundElt){
+              foundElt.activated = false;
+            }
+
+          }.bind(this);
+
+          var thisSubtaskFinishedListener = function(ev){
+            if(!ev.detail.src || !ev.detail.src.id)
+              return;
+            var sourceId = ev.detail.src.id;
+
+            var foundCb = this._finishedCallbacks[sourceId];
+            if (foundCb)
+              this.async(foundCb.bind(foundCb, ev));
+
+          }.bind(this);
+
+          this.disable();
+          this.$.runbatch.addEventListener("task_finished", thisAutodeactivateTaskListener);
+          this.$.runbatch.addEventListener("task_finished", thisSubtaskFinishedListener);
           this.$.runbatch.doTask(iWorker, thisFinishedCallback);
         }
       });

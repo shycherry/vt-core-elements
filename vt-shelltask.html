@@ -43,6 +43,9 @@
           this.$.injecter.input = this.command;
           this.$.injecter.params = this.params;
           this.injected = this.$.injecter.getInjected();
+          if(null != this.activewhenresolvable){
+            this.activated = this.$.injecter.isResolvable();
+          }
         },
         doTask : function(iWorker, iCallback){
           iCallback = (iCallback)? iCallback : _.noop;

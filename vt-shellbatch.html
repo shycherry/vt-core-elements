@@ -27,6 +27,7 @@
           this.onMutation(this, this.childrenUpdated);
         },
         childrenUpdated : function(mutations){
+          this.progress = 0;
           this.updateChildren();
           this.onMutation(this, this.childrenUpdated);
         },
