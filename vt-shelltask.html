@@ -1,5 +1,6 @@
 <link rel="import" href="./vt-shellworkable.html">
 <link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-toast/paper-toast.html">
 
 <polymer-element name="vt-shelltask" extends="vt-shellworkable" attributes="command">
   <template>
@@ -8,6 +9,7 @@
       <shadow id="parent"></shadow>
       <div id="taskview" flex>
         <template if="{{status != 'edit'}}">
+          <div id="showresult" on-click="{{showResultClick}}"><div id="show">[+]</div><div id="hide">[-]</div></div>
           <template if="{{injected != ''}}">
             {{injected}}
           </template>
@@ -18,6 +20,7 @@
         <template if="{{status == 'edit'}}">
           <paper-input floatingLabel label="{{injected}}" value="{{command}}"></paper-input>
         </template>
+        <div id="result"></div>
       </div>
     </div>
   </template>
@@ -25,10 +28,8 @@
     (function(){
       Polymer('vt-shelltask',{
         publish: {
-          command : {
-            value : "ls",
-            reflect : true
-          }
+          command : {value : "ls", reflect : true},
+          result : {value : false, reflect : true}
         },
         injected : "",
         hasErrors : false,
@@ -46,6 +47,23 @@
           if(null != this.activewhenresolvable){
             this.activated = this.$.injecter.isResolvable();
           }
+        },
+        showResultClick : function(){
+          this.result = !this.result;
+        },
+        buildResultHTML : function(iResultText){
+          while(this.$.result.firstChild){
+            this.$.result.removeChild(this.$.result.firstChild);
+          }
+          // var resultLines = iResultText.split("\n");
+          // for(var line of resultLines){
+          //   var newDiv = document.createElement("div");
+          //   newDiv.innerText = line;
+          //   this.$.result.appendChild(newDiv);
+          // }
+          var newDiv = document.createElement("div");
+          newDiv.innerText = iResultText;
+          this.$.result.appendChild(newDiv);
         },
         doTask : function(iWorker, iCallback){
           iCallback = (iCallback)? iCallback : _.noop;
@@ -79,6 +97,7 @@
             this.fire('task_finished', {'src': this, 'data':result});
             shellworker.removeEventListener('stdout_data', thisStdoutCallback);
             shellworker.removeEventListener('stderr_data', thisStderrCallback);
+            this.buildResultHTML(result);
             iCallback(err, result);
           }.bind(this);
 
